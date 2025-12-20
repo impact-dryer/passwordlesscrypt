@@ -29,7 +29,7 @@ let credentials: {
   lastUsedAt: number;
   prfEnabled: boolean;
   prfSalt: string;
-  authenticatorType: string;
+  authenticatorType: 'platform' | 'cross-platform';
 }[] = [];
 let wrappedDEKs: {
   credentialId: string;
@@ -629,4 +629,3 @@ describe('services/vault-service', () => {
     });
   });
 });
-
