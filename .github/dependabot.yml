@@ -2,13 +2,6 @@
 # Automatically creates PRs to update dependencies
 
 version: 2
-
-registries:
-  npm-registry:
-    type: npm-registry
-    url: https://registry.npmjs.org
-    replaces-base: true
-
 updates:
   # npm dependencies
   - package-ecosystem: 'npm'
