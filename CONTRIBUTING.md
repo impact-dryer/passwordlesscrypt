@@ -75,7 +75,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed setup instructions.
 
 ```bash
 # Quick start
-git clone https://github.com/yourusername/passwordless-encryption.git
+git clone <repository-url>
 cd passwordless-encryption
 npm install
 npm run dev
@@ -94,4 +94,3 @@ For security-related issues, please see [docs/SECURITY.md](docs/SECURITY.md#resp
 - Be patient — maintainers are volunteers
 
 Thank you for contributing! 🙏
-

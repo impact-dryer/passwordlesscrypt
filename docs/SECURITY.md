@@ -227,7 +227,7 @@ No audit trail of access attempts is maintained.
 If you discover a security vulnerability, please report it responsibly:
 
 1. **Do not** open a public GitHub issue
-2. Email security concerns to: [your-email@example.com]
+2. Use GitHub's private vulnerability reporting feature or open a security advisory
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce
@@ -241,4 +241,3 @@ If you discover a security vulnerability, please report it responsibly:
 - [NIST SP 800-57](https://csrc.nist.gov/publications/detail/sp/800-57-part-1/rev-5/final) — Key Management
 - [RFC 3394](https://www.rfc-editor.org/rfc/rfc3394) — AES Key Wrap
 - [WebAuthn Level 3](https://w3c.github.io/webauthn/) — PRF Extension
-

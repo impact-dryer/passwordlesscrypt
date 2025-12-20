@@ -19,7 +19,6 @@ dist/
 *.swp
 *.swo
 *~
-.cursor/
 
 # OS files
 .DS_Store
@@ -70,12 +69,12 @@ workbox-*.js
 *.crt
 secrets/
 
+# Cursor IDE
+.cursor/*
+!.cursor/rules/
+.cursor/rules/snyk_rules.mdc
 
+# Coverage
+coverage/
 
 .cursor
-
-coverage
-
-
-# Snyk Security Extension - AI Rules (auto-generated)
-.cursor/rules/snyk_rules.mdc
