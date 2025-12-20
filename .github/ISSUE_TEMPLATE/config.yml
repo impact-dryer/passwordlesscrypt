@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔐 Report Critical Security Vulnerability
+    url: https://github.com/impact-dryer/passwordlessencryption/security/advisories/new
+    about: For critical security issues, please use GitHub's private vulnerability reporting
+  - name: 💬 Discussions
+    url: https://github.com/impact-dryer/passwordlessencryption/discussions
+    about: Ask questions, share ideas, and connect with the community
+  - name: 📖 Documentation
+    url: https://github.com/impact-dryer/passwordlessencryption/tree/master/docs
+    about: Check our documentation for guides and references

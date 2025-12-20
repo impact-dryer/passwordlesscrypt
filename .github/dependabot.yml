@@ -1,0 +1,105 @@
+# Dependabot Configuration
+# Automatically creates PRs to update dependencies
+
+version: 2
+
+registries:
+  npm-registry:
+    type: npm-registry
+    url: https://registry.npmjs.org
+    replaces-base: true
+
+updates:
+  # npm dependencies
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'UTC'
+    open-pull-requests-limit: 10
+    registries:
+      - npm-registry
+    versioning-strategy: increase
+    groups:
+      # Group minor/patch updates for production dependencies
+      production-dependencies:
+        dependency-type: 'production'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # Group minor/patch updates for development dependencies
+      dev-dependencies:
+        dependency-type: 'development'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # Group all TypeScript-related packages
+      typescript:
+        patterns:
+          - 'typescript*'
+          - '@types/*'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # Group all testing packages
+      testing:
+        patterns:
+          - 'vitest*'
+          - '@vitest/*'
+          - '@testing-library/*'
+          - '@playwright/*'
+          - 'playwright*'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # Group all linting/formatting packages
+      linting:
+        patterns:
+          - 'eslint*'
+          - 'prettier*'
+          - '@eslint/*'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # Group SvelteKit ecosystem
+      svelte:
+        patterns:
+          - 'svelte*'
+          - '@sveltejs/*'
+        update-types:
+          - 'minor'
+          - 'patch'
+    commit-message:
+      prefix: 'deps'
+      include: 'scope'
+    labels:
+      - 'dependencies'
+      - 'automated'
+    reviewers:
+      - 'security-team'
+    ignore:
+      # Ignore major version updates (handle manually)
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+
+  # GitHub Actions updates
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'UTC'
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'
+    labels:
+      - 'ci/cd'
+      - 'automated'

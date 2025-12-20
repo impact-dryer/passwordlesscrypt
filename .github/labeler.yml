@@ -1,0 +1,64 @@
+# PR Labeler Configuration
+# Automatically labels PRs based on files changed
+
+# Documentation changes
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+
+# Source code changes
+source:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/**'
+
+# Component changes
+components:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/lib/components/**'
+
+# Crypto/Security changes
+security:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/lib/crypto/**'
+          - 'src/lib/webauthn/**'
+
+# Test changes
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.test.ts'
+          - '**/*.spec.ts'
+          - 'tests/**'
+
+# CI/CD changes
+ci/cd:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+
+# Configuration changes
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '*.config.*'
+          - 'tsconfig.json'
+          - 'package.json'
+
+# Styling changes
+styling:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.css'
+          - 'tailwind.config.*'
+
+# Dependencies
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'package-lock.json'
