@@ -65,12 +65,12 @@ export async function detectCapabilities(): Promise<PlatformCapabilities> {
         // Check browser and version for known PRF support
         const ua = navigator.userAgent;
         const isChrome = /Chrome\/(\d+)/.exec(ua);
-        const isSafari = /Safari\/(\d+)/.exec(ua) && !/Chrome/.test(ua);
+        const isSafari = /Safari\/(\d+)/.exec(ua) && !ua.includes('Chrome');
         const isFirefox = /Firefox\/(\d+)/.exec(ua);
 
         if (isChrome && parseInt(isChrome[1] ?? '0', 10) >= 116) {
           capabilities.prfSupported = true;
-        } else if (isSafari && /Version\/18/.test(ua)) {
+        } else if (isSafari && ua.includes('Version/18')) {
           capabilities.prfSupported = true;
         } else if (isFirefox && parseInt(isFirefox[1] ?? '0', 10) >= 130) {
           capabilities.prfSupported = true;
@@ -102,4 +102,5 @@ export function getPRFSupportMessage(capabilities: PlatformCapabilities): string
 
   return null;
 }
+
 

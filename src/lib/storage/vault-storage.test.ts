@@ -42,7 +42,7 @@ vi.mock('idb-keyval', () => {
     createStore: vi.fn(() => ({})),
     // Expose store for testing
     __store: store,
-    __clearStore: () => store.clear(),
+    __clearStore: () => { store.clear(); },
   };
 });
 
@@ -50,7 +50,7 @@ describe('storage/vault-storage', () => {
   beforeEach(async () => {
     // Clear the mock store before each test
     const idbModule = await import('idb-keyval');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const clearFn = (idbModule as any).__clearStore;
     if (typeof clearFn === 'function') {
       clearFn();
@@ -362,4 +362,5 @@ describe('storage/vault-storage', () => {
     });
   });
 });
+
 

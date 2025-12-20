@@ -6,7 +6,7 @@
     readonly children: Snippet;
   }
 
-  let { children }: Props = $props();
+  const { children }: Props = $props();
 </script>
 
 <div class="min-h-dvh bg-background">

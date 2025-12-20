@@ -46,7 +46,7 @@ export async function deriveAesKey(
   return crypto.subtle.deriveKey(
     {
       name: 'HKDF',
-      salt: new Uint8Array().buffer as ArrayBuffer, // Empty salt is fine when IKM has high entropy (PRF output does)
+      salt: new Uint8Array().buffer, // Empty salt is fine when IKM has high entropy (PRF output does)
       hash: 'SHA-256',
       info: infoBytes.buffer as ArrayBuffer,
     },
@@ -80,4 +80,5 @@ export async function deriveEncryptionKey(prfOutput: Uint8Array): Promise<Crypto
   const masterKey = await importMasterKey(prfOutput);
   return deriveAesKey(masterKey, HKDF_INFO.DEK, 'encrypt-decrypt');
 }
+
 

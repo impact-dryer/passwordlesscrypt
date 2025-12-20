@@ -24,7 +24,7 @@
         class="flex-1 px-3 py-2 text-sm rounded-lg border transition-all {selected === type
           ? 'bg-primary-500/10 border-primary-500 text-primary-400'
           : 'bg-surface border-border text-text-secondary hover:border-text-muted'}"
-        onclick={() => onselect(type)}
+        onclick={() => { onselect(type); }}
         aria-pressed={selected === type}
       >
         {capitalize(type)}
@@ -32,4 +32,5 @@
     {/each}
   </div>
 </fieldset>
+
 

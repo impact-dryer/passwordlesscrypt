@@ -12,7 +12,7 @@ import type { StoredCredential } from './types';
 class MockPublicKeyCredential {
   id: string;
   rawId: ArrayBuffer;
-  type: string = 'public-key';
+  type = 'public-key';
   response: {
     clientDataJSON: ArrayBuffer;
     authenticatorData: ArrayBuffer;
@@ -20,8 +20,8 @@ class MockPublicKeyCredential {
     userHandle: ArrayBuffer;
     getTransports: (() => string[]) | undefined;
   };
-  authenticatorAttachment: string = 'platform';
-  private extensionResults: Record<string, unknown>;
+  authenticatorAttachment = 'platform';
+  private readonly extensionResults: Record<string, unknown>;
 
   constructor(options: {
     id: string;
@@ -77,7 +77,7 @@ describe('webauthn/prf', () => {
 
     const mockCredential = new MockPublicKeyCredential({
       id: btoa(String.fromCharCode(...mockCredentialId)),
-      rawId: mockCredentialId.buffer as ArrayBuffer,
+      rawId: mockCredentialId.buffer,
       extensionResults,
       hasTransports: options.hasTransports !== false,
     });
@@ -311,4 +311,5 @@ describe('webauthn/prf', () => {
     });
   });
 });
+
 

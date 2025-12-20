@@ -21,7 +21,7 @@ let encryptedVault: string | undefined;
 let metadata:
   | { version: number; createdAt: number; modifiedAt: number; itemCount: number }
   | undefined;
-let credentials: Array<{
+let credentials: {
   id: string;
   rawId: string;
   name: string;
@@ -30,13 +30,13 @@ let credentials: Array<{
   prfEnabled: boolean;
   prfSalt: string;
   authenticatorType: string;
-}> = [];
-let wrappedDEKs: Array<{
+}[] = [];
+let wrappedDEKs: {
   credentialId: string;
   wrappedKey: string;
   createdAt: number;
   prfSalt: string;
-}> = [];
+}[] = [];
 
 function resetStorage() {
   encryptedVault = undefined;
@@ -96,11 +96,20 @@ vi.mock('$storage', () => {
 
 // Mock webauthn module
 vi.mock('$webauthn', () => {
+  class WebAuthnError extends Error {
+    type: string;
+    constructor(type: string, message: string) {
+      super(message);
+      this.type = type;
+      this.name = 'WebAuthnError';
+    }
+  }
+
   return {
     createCredential: vi.fn(async (_userName: string, passkeyName: string) => ({
       credential: {
-        id: `cred-${Date.now()}`,
-        rawId: 'raw-id',
+        id: `cred-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        rawId: `raw-id-${Date.now()}`,
         name: passkeyName,
         createdAt: Date.now(),
         lastUsedAt: Date.now(),
@@ -110,18 +119,16 @@ vi.mock('$webauthn', () => {
       },
       prfOutput: new Uint8Array(32).fill(0x42),
     })),
-    authenticateWithAnyCredential: vi.fn(async (creds: typeof credentials) => ({
-      credentialId: creds[0]?.id ?? 'unknown',
-      prfOutput: new Uint8Array(32).fill(0x42),
-    })),
-    WebAuthnError: class WebAuthnError extends Error {
-      type: string;
-      constructor(type: string, message: string) {
-        super(message);
-        this.type = type;
-        this.name = 'WebAuthnError';
+    authenticateWithAnyCredential: vi.fn(async (creds: { id: string }[]) => {
+      if (creds.length === 0) {
+        throw new WebAuthnError('no-credentials', 'No passkeys registered');
       }
-    },
+      return {
+        credentialId: creds[0]?.id ?? 'unknown',
+        prfOutput: new Uint8Array(32).fill(0x42),
+      };
+    }),
+    WebAuthnError,
   };
 });
 
@@ -161,10 +168,57 @@ vi.mock('$crypto', () => {
 });
 
 describe('services/vault-service', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  beforeEach(async () => {
+    vi.resetAllMocks();
     resetStorage();
     lockVault();
+
+    // Re-establish mock implementations after reset
+    const storage = await import('$storage');
+    vi.mocked(storage.saveEncryptedVault).mockImplementation(async (data: string) => {
+      encryptedVault = data;
+    });
+    vi.mocked(storage.loadEncryptedVault).mockImplementation(async () => encryptedVault);
+    vi.mocked(storage.saveVaultMetadata).mockImplementation(async (data) => {
+      metadata = data as typeof metadata;
+    });
+    vi.mocked(storage.loadVaultMetadata).mockImplementation(async () => metadata);
+    vi.mocked(storage.saveCredentials).mockImplementation(async (data) => {
+      credentials = [...data] as typeof credentials;
+    });
+    vi.mocked(storage.loadCredentials).mockImplementation(async () => [...credentials]);
+    vi.mocked(storage.saveWrappedDEKs).mockImplementation(async (data) => {
+      wrappedDEKs = [...data] as typeof wrappedDEKs;
+    });
+    vi.mocked(storage.addCredential).mockImplementation(async (cred) => {
+      credentials.push(cred as (typeof credentials)[0]);
+    });
+    vi.mocked(storage.removeCredential).mockImplementation(async (id: string) => {
+      credentials = credentials.filter((c) => c.id !== id);
+    });
+    vi.mocked(storage.addWrappedDEK).mockImplementation(async (dek) => {
+      wrappedDEKs.push(dek as (typeof wrappedDEKs)[0]);
+    });
+    vi.mocked(storage.removeWrappedDEK).mockImplementation(async (credId: string) => {
+      wrappedDEKs = wrappedDEKs.filter((d) => d.credentialId !== credId);
+    });
+    vi.mocked(storage.getWrappedDEKForCredential).mockImplementation(async (credId: string) => {
+      return wrappedDEKs.find((d) => d.credentialId === credId);
+    });
+    vi.mocked(storage.updateCredentialLastUsed).mockImplementation(async () => {});
+    vi.mocked(storage.vaultExists).mockImplementation(
+      async () => encryptedVault !== undefined && metadata !== undefined
+    );
+    vi.mocked(storage.createInitialMetadata).mockImplementation(() => ({
+      version: 1,
+      createdAt: Date.now(),
+      modifiedAt: Date.now(),
+      itemCount: 0,
+    }));
+    vi.mocked(storage.clearAllVaultData).mockImplementation(async () => {
+      resetStorage();
+    });
+    vi.mocked(storage.validateVaultData).mockImplementation((data: unknown) => data as any);
   });
 
   describe('getVaultState', () => {
@@ -413,22 +467,27 @@ describe('services/vault-service', () => {
   describe('removePasskey', () => {
     it('should remove passkey from vault', async () => {
       await setupVault('User', 'First');
-      await addPasskey('Second');
+      const credsAfterSetup = await addPasskey('Second');
 
-      // Add both credentials to storage
-      const secondCredId = credentials[1]?.id ?? 'second';
+      // Verify we have 2 credentials
+      expect(credsAfterSetup.length).toBeGreaterThanOrEqual(2);
 
-      if (credentials.length >= 2) {
-        const creds = await removePasskey(secondCredId);
-        expect(creds.some((c) => c.id === secondCredId)).toBe(false);
-      }
+      // Get the second credential ID from the returned list
+      const secondCred = credsAfterSetup.find((c) => c.name === 'Second');
+      expect(secondCred).toBeDefined();
+
+      const creds = await removePasskey(secondCred!.id);
+      expect(creds.some((c) => c.id === secondCred!.id)).toBe(false);
     });
 
     it('should throw when trying to remove last passkey', async () => {
       await setupVault('User', 'Only Key');
 
-      const credId = credentials[0]?.id ?? 'cred';
-      await expect(removePasskey(credId)).rejects.toThrow('Cannot remove the last passkey');
+      const state = getVaultState();
+      const credId = state.credentials[0]?.id;
+      expect(credId).toBeDefined();
+
+      await expect(removePasskey(credId!)).rejects.toThrow('Cannot remove the last passkey');
     });
 
     it('should throw when passkey not found', async () => {
