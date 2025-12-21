@@ -272,5 +272,3 @@ describe('crypto/envelope', () => {
     });
   });
 });
-
-

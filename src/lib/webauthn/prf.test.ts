@@ -311,5 +311,3 @@ describe('webauthn/prf', () => {
     });
   });
 });
-
-

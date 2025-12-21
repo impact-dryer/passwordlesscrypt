@@ -18,14 +18,16 @@
 <!-- eslint-disable-next-line security/detect-object-injection -->
 <div class="rounded-xl border p-4 {variantStyles[variant]}">
   <div class="flex gap-3">
-    <Icon name={variant === 'error' ? 'alert' : variant === 'info' ? 'info' : 'alert'} size={20} class="flex-shrink-0 mt-0.5" />
+    <Icon
+      name={variant === 'error' ? 'alert' : variant === 'info' ? 'info' : 'alert'}
+      size={20}
+      class="mt-0.5 flex-shrink-0"
+    />
     <div class="flex-1">
       <p class="text-sm font-medium">{message}</p>
-      <p class="text-xs mt-1 opacity-80">
+      <p class="mt-1 text-xs opacity-80">
         For best results, use Chrome 116+, Safari 18+, or Firefox 130+.
       </p>
     </div>
   </div>
 </div>
-
-

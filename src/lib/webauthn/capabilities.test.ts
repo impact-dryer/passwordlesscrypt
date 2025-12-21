@@ -212,5 +212,3 @@ describe('webauthn/capabilities', () => {
     });
   });
 });
-
-

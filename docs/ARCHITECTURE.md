@@ -254,4 +254,3 @@ addVaultItem(item: VaultItem): Promise<VaultItem>
 updateVaultItem(id: string, updates: Partial<VaultItem>): Promise<VaultItem>
 deleteVaultItem(id: string): Promise<void>
 ```
-

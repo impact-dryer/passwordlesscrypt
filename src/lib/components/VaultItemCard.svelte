@@ -45,23 +45,21 @@
 </script>
 
 <div
-  class="group bg-surface-elevated border border-border rounded-xl p-4 hover:border-text-muted transition-all duration-200"
+  class="group bg-surface-elevated border-border hover:border-text-muted rounded-xl border p-4 transition-all duration-200"
 >
   <div class="flex items-start gap-3">
     <!-- Icon -->
     <div
-      class="flex-shrink-0 w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center"
+      class="bg-primary-500/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg"
     >
       <Icon name={typeIcons[item.type]} size={20} class="text-primary-400" />
     </div>
 
     <!-- Content -->
-    <div class="flex-1 min-w-0">
+    <div class="min-w-0 flex-1">
       <div class="flex items-center gap-2">
-        <h3 class="font-medium text-text-primary truncate">{item.title}</h3>
-        <span
-          class="text-xs px-2 py-0.5 rounded-full bg-surface text-text-muted capitalize"
-        >
+        <h3 class="text-text-primary truncate font-medium">{item.title}</h3>
+        <span class="bg-surface text-text-muted rounded-full px-2 py-0.5 text-xs capitalize">
           {item.type}
         </span>
       </div>
@@ -71,7 +69,7 @@
           href={item.url}
           target="_blank"
           rel="noopener noreferrer"
-          class="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1 mt-1"
+          class="text-primary-400 hover:text-primary-300 mt-1 flex items-center gap-1 text-sm"
         >
           {item.url}
           <Icon name="external" size={12} />
@@ -79,7 +77,7 @@
       {/if}
 
       {#if item.username}
-        <p class="text-sm text-text-secondary mt-1">
+        <p class="text-text-secondary mt-1 text-sm">
           <span class="text-text-muted">Username:</span>
           {item.username}
         </p>
@@ -90,7 +88,7 @@
         <div class="flex items-center gap-2">
           <button
             type="button"
-            class="text-xs text-text-muted hover:text-text-secondary flex items-center gap-1 transition-colors"
+            class="text-text-muted hover:text-text-secondary flex items-center gap-1 text-xs transition-colors"
             onclick={() => (showContent = !showContent)}
           >
             <Icon name={showContent ? 'eye-off' : 'eye'} size={14} />
@@ -98,7 +96,7 @@
           </button>
           <button
             type="button"
-            class="text-xs text-text-muted hover:text-text-secondary flex items-center gap-1 transition-colors"
+            class="text-text-muted hover:text-text-secondary flex items-center gap-1 text-xs transition-colors"
             onclick={copyToClipboard}
           >
             <Icon name={copied ? 'check' : 'copy'} size={14} />
@@ -108,21 +106,21 @@
 
         {#if showContent}
           <pre
-            class="mt-2 p-3 bg-background rounded-lg text-sm text-text-secondary font-mono overflow-x-auto">{item.content}</pre>
+            class="bg-background text-text-secondary mt-2 overflow-x-auto rounded-lg p-3 font-mono text-sm">{item.content}</pre>
         {:else}
-          <p class="mt-2 text-sm text-text-muted font-mono">••••••••••••</p>
+          <p class="text-text-muted mt-2 font-mono text-sm">••••••••••••</p>
         {/if}
       </div>
 
       <!-- Footer -->
-      <p class="text-xs text-text-muted mt-3">
+      <p class="text-text-muted mt-3 text-xs">
         Modified {formatDate(item.modifiedAt)}
       </p>
     </div>
 
     <!-- Actions -->
     <div
-      class="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+      class="flex flex-shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
     >
       <Button variant="ghost" size="sm" onclick={onedit}>
         <Icon name="edit" size={16} />
@@ -133,5 +131,3 @@
     </div>
   </div>
 </div>
-
-

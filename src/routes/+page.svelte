@@ -363,21 +363,13 @@
   <title>Passwordless Encryption</title>
 </svelte:head>
 
-<main class="min-h-dvh flex flex-col">
+<main class="flex min-h-dvh flex-col">
   {#if isLoading}
     <LoadingView />
   {:else if currentView === 'setup'}
-    <SetupView
-      {capabilities}
-      {compatibilityMessage}
-      onsetup={() => (showSetupModal = true)}
-    />
+    <SetupView {capabilities} {compatibilityMessage} onsetup={() => (showSetupModal = true)} />
   {:else if currentView === 'locked'}
-    <LockedView
-      credentials={vaultState?.credentials ?? []}
-      {isUnlocking}
-      onunlock={handleUnlock}
-    />
+    <LockedView credentials={vaultState?.credentials ?? []} {isUnlocking} onunlock={handleUnlock} />
   {:else if currentView === 'vault' || currentView === 'settings'}
     <VaultHeader
       itemCount={vaultState?.metadata?.itemCount ?? 0}

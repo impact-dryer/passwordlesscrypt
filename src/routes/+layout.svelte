@@ -9,6 +9,6 @@
   const { children }: Props = $props();
 </script>
 
-<div class="min-h-dvh bg-background">
+<div class="bg-background min-h-dvh">
   {@render children()}
 </div>

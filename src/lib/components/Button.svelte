@@ -31,8 +31,7 @@
       'bg-primary-500 text-white hover:bg-primary-600 focus-visible:ring-primary-500 shadow-lg shadow-primary-500/20',
     secondary:
       'bg-surface-elevated text-text-primary border border-border hover:bg-border hover:border-text-muted focus-visible:ring-primary-500',
-    danger:
-      'bg-danger-500 text-white hover:bg-danger-600 focus-visible:ring-danger-500',
+    danger: 'bg-danger-500 text-white hover:bg-danger-600 focus-visible:ring-danger-500',
     ghost:
       'bg-transparent text-text-secondary hover:text-text-primary hover:bg-surface-elevated focus-visible:ring-primary-500',
   };
@@ -53,18 +52,12 @@
 >
   {#if loading}
     <svg
-      class="animate-spin h-4 w-4"
+      class="h-4 w-4 animate-spin"
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
     >
-      <circle
-        class="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        stroke-width="4"
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
       ></circle>
       <path
         class="opacity-75"
@@ -75,5 +68,3 @@
   {/if}
   {@render children()}
 </button>
-
-

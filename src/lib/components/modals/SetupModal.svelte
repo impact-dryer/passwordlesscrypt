@@ -54,7 +54,7 @@
       value={passkeyName}
       oninput={handlePasskeyNameInput}
     />
-    <p class="text-xs text-text-muted">
+    <p class="text-text-muted text-xs">
       You'll be prompted to use your device's biometrics or security key.
     </p>
   </div>
@@ -64,5 +64,3 @@
     <Button variant="primary" onclick={onsubmit} loading={isLoading}>Create Vault</Button>
   {/snippet}
 </Modal>
-
-
