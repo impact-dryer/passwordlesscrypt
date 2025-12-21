@@ -24,7 +24,7 @@
 </script>
 
 <div
-  class="bg-surface-elevated flex items-center gap-4 rounded-xl border p-4 transition-all duration-200 {isCurrentSession
+  class="group bg-surface-elevated flex items-center gap-4 rounded-xl border p-4 transition-all duration-200 {isCurrentSession
     ? 'border-primary-500 shadow-glow'
     : 'border-border hover:border-text-muted'}"
 >
@@ -64,6 +64,11 @@
   {#if canDelete && ondelete}
     <Button variant="ghost" size="sm" onclick={ondelete}>
       <Icon name="trash" size={16} class="text-danger-500" />
+      <span class="sr-only">Remove passkey</span>
     </Button>
   {/if}
 </div>
+
+
+
+

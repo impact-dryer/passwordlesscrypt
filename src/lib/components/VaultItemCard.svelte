@@ -126,10 +126,16 @@
     >
       <Button variant="ghost" size="sm" onclick={onedit}>
         <Icon name="edit" size={16} />
+        <span class="sr-only">Edit item</span>
       </Button>
       <Button variant="ghost" size="sm" onclick={ondelete}>
         <Icon name="trash" size={16} class="text-danger-500" />
+        <span class="sr-only">Delete item</span>
       </Button>
     </div>
   </div>
 </div>
+
+
+
+

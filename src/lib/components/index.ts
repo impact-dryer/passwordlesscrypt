@@ -23,3 +23,7 @@ export { VaultHeader } from './layout';
 
 // Modal components
 export { SetupModal, ItemFormModal, ConfirmDeleteModal, AddPasskeyModal } from './modals';
+
+
+
+

@@ -64,3 +64,7 @@ export interface StoredVaultData {
   /** Wrapped DEKs for each credential */
   wrappedDEKs: WrappedDEK[];
 }
+
+
+
+

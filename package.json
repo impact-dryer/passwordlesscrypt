@@ -12,7 +12,6 @@
     "test": "vitest",
     "test:unit": "vitest run",
     "test:integration": "vitest run --project integration",
-    "test:e2e": "playwright test",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -23,7 +22,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "@playwright/test": "^1.52.0",
     "@sveltejs/adapter-static": "^3.0.0",
     "@sveltejs/kit": "^2.21.0",
     "@sveltejs/vite-plugin-svelte": "^6.2.0",

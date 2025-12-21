@@ -109,3 +109,7 @@ export function clearBytes(bytes: Uint8Array): void {
 export function bufferToBytes(buffer: ArrayBuffer): Uint8Array {
   return new Uint8Array(buffer);
 }
+
+
+
+

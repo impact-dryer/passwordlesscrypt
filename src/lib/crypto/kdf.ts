@@ -80,3 +80,7 @@ export async function deriveEncryptionKey(prfOutput: Uint8Array): Promise<Crypto
   const masterKey = await importMasterKey(prfOutput);
   return deriveAesKey(masterKey, HKDF_INFO.DEK, 'encrypt-decrypt');
 }
+
+
+
+
