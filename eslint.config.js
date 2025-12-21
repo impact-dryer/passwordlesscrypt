@@ -94,8 +94,10 @@ export default ts.config(
       'build/',
       '.svelte-kit/',
       'dist/',
+      'coverage/',
       '**/*.config.js',
       '**/*.config.cjs',
+      '**/*.config.ts',
     ],
   }
 );

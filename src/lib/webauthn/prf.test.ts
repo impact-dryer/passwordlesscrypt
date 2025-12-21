@@ -41,7 +41,7 @@ class MockPublicKeyCredential {
     };
   }
 
-  getClientExtensionResults() {
+  getClientExtensionResults(): Record<string, unknown> {
     return this.extensionResults;
   }
 }
@@ -55,7 +55,11 @@ describe('webauthn/prf', () => {
     prfOutput?: Uint8Array;
     throwError?: Error;
     hasTransports?: boolean;
-  }) {
+  }): {
+    mockCreate: ReturnType<typeof vi.fn>;
+    mockGet: ReturnType<typeof vi.fn>;
+    mockCredential: MockPublicKeyCredential;
+  } {
     // Setup PublicKeyCredential global
     Object.defineProperty(globalThis, 'PublicKeyCredential', {
       value: MockPublicKeyCredential,
@@ -293,6 +297,34 @@ describe('webauthn/prf', () => {
       });
     });
 
+    it('should map denied in NotAllowedError message', async () => {
+      const error = new DOMException('The operation was denied', 'NotAllowedError');
+      setupMockNavigator({ throwError: error });
+
+      await expect(createCredential('User', 'Key')).rejects.toMatchObject({
+        type: 'cancelled',
+      });
+    });
+
+    it('should map SecurityError', async () => {
+      const error = new DOMException('Security error', 'SecurityError');
+      setupMockNavigator({ throwError: error });
+
+      await expect(createCredential('User', 'Key')).rejects.toMatchObject({
+        type: 'security-error',
+      });
+    });
+
+    it('should map unknown DOMException types', async () => {
+      const error = new DOMException('Unknown error', 'UnknownError');
+      setupMockNavigator({ throwError: error });
+
+      await expect(createCredential('User', 'Key')).rejects.toMatchObject({
+        type: 'unknown',
+        message: 'Unknown error',
+      });
+    });
+
     it('should handle generic errors', async () => {
       const error = new Error('Generic error');
       setupMockNavigator({ throwError: error });
@@ -307,6 +339,216 @@ describe('webauthn/prf', () => {
 
       await expect(createCredential('User', 'Key')).rejects.toMatchObject({
         type: 'unknown',
+      });
+    });
+  });
+
+  describe('null credential handling', () => {
+    it('should throw when credential creation returns null', async () => {
+      Object.defineProperty(globalThis, 'PublicKeyCredential', {
+        value: MockPublicKeyCredential,
+        writable: true,
+        configurable: true,
+      });
+
+      Object.defineProperty(globalThis.navigator, 'credentials', {
+        value: {
+          create: vi.fn().mockResolvedValue(null),
+          get: vi.fn().mockResolvedValue(null),
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      await expect(createCredential('User', 'Key')).rejects.toMatchObject({
+        type: 'unknown',
+        message: 'Failed to create credential',
+      });
+    });
+
+    it('should throw when authentication returns null', async () => {
+      Object.defineProperty(globalThis, 'PublicKeyCredential', {
+        value: MockPublicKeyCredential,
+        writable: true,
+        configurable: true,
+      });
+
+      Object.defineProperty(globalThis.navigator, 'credentials', {
+        value: {
+          create: vi.fn().mockResolvedValue(null),
+          get: vi.fn().mockResolvedValue(null),
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      const testCred = {
+        id: 'test-id',
+        rawId: 'dGVzdC1pZA',
+        name: 'Test',
+        createdAt: Date.now(),
+        lastUsedAt: Date.now(),
+        prfEnabled: true,
+        prfSalt: 'salt',
+        authenticatorType: 'platform' as const,
+      };
+
+      await expect(authenticateWithCredential(testCred)).rejects.toMatchObject({
+        type: 'unknown',
+        message: 'Authentication failed',
+      });
+    });
+
+    it('should throw when authenticateWithAnyCredential returns null', async () => {
+      Object.defineProperty(globalThis, 'PublicKeyCredential', {
+        value: MockPublicKeyCredential,
+        writable: true,
+        configurable: true,
+      });
+
+      Object.defineProperty(globalThis.navigator, 'credentials', {
+        value: {
+          create: vi.fn().mockResolvedValue(null),
+          get: vi.fn().mockResolvedValue(null),
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      const testCreds = [
+        {
+          id: 'test-id',
+          rawId: 'dGVzdC1pZA',
+          name: 'Test',
+          createdAt: Date.now(),
+          lastUsedAt: Date.now(),
+          prfEnabled: true,
+          prfSalt: 'salt',
+          authenticatorType: 'platform' as const,
+        },
+      ];
+
+      await expect(authenticateWithAnyCredential(testCreds)).rejects.toMatchObject({
+        type: 'unknown',
+        message: 'Authentication failed',
+      });
+    });
+  });
+
+  describe('PRF fallback handling', () => {
+    it('should fallback to single credential auth when PRF output missing but credential found', async () => {
+      const mockCredentialId = new Uint8Array(32).fill(0x01);
+      const mockPRFOutput = new Uint8Array(32).fill(0x42);
+
+      // First call returns no PRF results, second call (fallback) returns PRF results
+      let callCount = 0;
+      const mockCredential = new MockPublicKeyCredential({
+        id: btoa(String.fromCharCode(...mockCredentialId)),
+        rawId: mockCredentialId.buffer,
+        extensionResults: {},
+        hasTransports: true,
+      });
+
+      const mockCredentialWithPRF = new MockPublicKeyCredential({
+        id: btoa(String.fromCharCode(...mockCredentialId)),
+        rawId: mockCredentialId.buffer,
+        extensionResults: {
+          prf: {
+            enabled: true,
+            results: {
+              first: mockPRFOutput.buffer,
+            },
+          },
+        },
+        hasTransports: true,
+      });
+
+      Object.defineProperty(globalThis, 'PublicKeyCredential', {
+        value: MockPublicKeyCredential,
+        writable: true,
+        configurable: true,
+      });
+
+      Object.defineProperty(globalThis.navigator, 'credentials', {
+        value: {
+          create: vi.fn().mockResolvedValue(mockCredentialWithPRF),
+          get: vi.fn().mockImplementation(() => {
+            callCount++;
+            // First call returns no PRF, second call (fallback) returns PRF
+            if (callCount === 1) {
+              return Promise.resolve(mockCredential);
+            }
+            return Promise.resolve(mockCredentialWithPRF);
+          }),
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      const testCreds = [
+        {
+          id: btoa(String.fromCharCode(...mockCredentialId)),
+          rawId: btoa(String.fromCharCode(...mockCredentialId))
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=/g, ''),
+          name: 'Test',
+          createdAt: Date.now(),
+          lastUsedAt: Date.now(),
+          prfEnabled: true,
+          prfSalt: 'salt',
+          authenticatorType: 'platform' as const,
+        },
+      ];
+
+      const result = await authenticateWithAnyCredential(testCreds);
+      expect(result.prfOutput).toBeInstanceOf(Uint8Array);
+    });
+
+    it('should throw when PRF output missing and no matching credential found', async () => {
+      const mockCredentialId = new Uint8Array(32).fill(0x01);
+      const differentCredentialId = new Uint8Array(32).fill(0x99);
+
+      const mockCredential = new MockPublicKeyCredential({
+        id: btoa(String.fromCharCode(...differentCredentialId)),
+        rawId: differentCredentialId.buffer,
+        extensionResults: {},
+        hasTransports: true,
+      });
+
+      Object.defineProperty(globalThis, 'PublicKeyCredential', {
+        value: MockPublicKeyCredential,
+        writable: true,
+        configurable: true,
+      });
+
+      Object.defineProperty(globalThis.navigator, 'credentials', {
+        value: {
+          create: vi.fn().mockResolvedValue(mockCredential),
+          get: vi.fn().mockResolvedValue(mockCredential),
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      const testCreds = [
+        {
+          id: btoa(String.fromCharCode(...mockCredentialId)),
+          rawId: btoa(String.fromCharCode(...mockCredentialId))
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=/g, ''),
+          name: 'Test',
+          createdAt: Date.now(),
+          lastUsedAt: Date.now(),
+          prfEnabled: true,
+          prfSalt: 'salt',
+          authenticatorType: 'platform' as const,
+        },
+      ];
+
+      await expect(authenticateWithAnyCredential(testCreds)).rejects.toMatchObject({
+        type: 'prf-not-enabled',
       });
     });
   });

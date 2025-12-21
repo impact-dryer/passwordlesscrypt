@@ -205,7 +205,7 @@ export async function unlockVault(): Promise<UnlockResult> {
 
   // Load and decrypt vault
   const encryptedVault = await loadEncryptedVault();
-  if (!encryptedVault) {
+  if (encryptedVault === undefined || encryptedVault === '') {
     throw new Error('Encrypted vault not found');
   }
 
@@ -216,8 +216,9 @@ export async function unlockVault(): Promise<UnlockResult> {
   let vault: VaultData;
   try {
     vault = validateVaultData(decryptedData);
-  } catch (validationError) {
-    throw new Error('Vault data validation failed. The data may be corrupted or tampered with.');
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown validation error';
+    throw new Error(`Vault data validation failed: ${errorMessage}`);
   }
 
   const metadata = await loadVaultMetadata();
@@ -362,13 +363,8 @@ export async function updateVaultItem(
     throw new Error('Vault must be unlocked');
   }
 
-  const itemIndex = state.vault.items.findIndex((item) => item.id === id);
-  if (itemIndex === -1) {
-    throw new Error('Item not found');
-  }
-
-  const existingItem = state.vault.items[itemIndex];
-  if (!existingItem) {
+  const existingItem = state.vault.items.find((item) => item.id === id);
+  if (existingItem === undefined) {
     throw new Error('Item not found');
   }
 
@@ -378,7 +374,9 @@ export async function updateVaultItem(
     modifiedAt: Date.now(),
   };
 
-  state.vault.items[itemIndex] = updatedItem;
+  // Find and update the item in the array
+  const itemIndex = state.vault.items.findIndex((item) => item.id === id);
+  state.vault.items.splice(itemIndex, 1, updatedItem);
 
   // Re-encrypt and save
   await saveVaultData();
@@ -424,13 +422,21 @@ export function searchVaultItems(query: string): VaultItem[] {
   }
 
   const lowerQuery = query.toLowerCase();
-  return state.vault.items.filter(
-    (item) =>
-      item.title.toLowerCase().includes(lowerQuery) ||
-      item.content.toLowerCase().includes(lowerQuery) ||
-      item.url?.toLowerCase().includes(lowerQuery) ||
-      item.username?.toLowerCase().includes(lowerQuery)
-  );
+  return state.vault.items.filter((item) => {
+    if (item.title.toLowerCase().includes(lowerQuery)) {
+      return true;
+    }
+    if (item.content.toLowerCase().includes(lowerQuery)) {
+      return true;
+    }
+    if (item.url?.toLowerCase().includes(lowerQuery) === true) {
+      return true;
+    }
+    if (item.username?.toLowerCase().includes(lowerQuery) === true) {
+      return true;
+    }
+    return false;
+  });
 }
 
 /**
@@ -487,7 +493,8 @@ export function generateSecurePassword(length = 20): string {
     for (const byte of randomBytes) {
       // Reject bytes that would cause modulo bias
       if (byte < maxValidByte && password.length < length) {
-        password += charset[byte % charset.length];
+        const charIndex = byte % charset.length;
+        password += charset.charAt(charIndex);
       }
     }
   }

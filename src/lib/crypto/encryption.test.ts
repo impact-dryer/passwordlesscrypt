@@ -81,8 +81,9 @@ describe('crypto/encryption', () => {
 
     it('should handle large data round-trip', async () => {
       const plaintext = new Uint8Array(10000);
-      for (let i = 0; i < plaintext.length; i++) {
-        plaintext[i] = i % 256;
+      const len = plaintext.length;
+      for (let i = 0; i < len; i++) {
+        plaintext.set([i % 256], i);
       }
 
       const encrypted = await encryptData(testKey, plaintext);
@@ -109,8 +110,9 @@ describe('crypto/encryption', () => {
 
       // Tamper with the ciphertext (not the IV)
       const tamperedIndex = AES_GCM_IV_LENGTH + 5;
-      if (encrypted[tamperedIndex] !== undefined) {
-        encrypted[tamperedIndex] ^= 0xff;
+      const currentValue = encrypted.at(tamperedIndex);
+      if (currentValue !== undefined) {
+        encrypted.set([currentValue ^ 0xff], tamperedIndex);
       }
 
       await expect(decryptData(testKey, encrypted)).rejects.toThrow();

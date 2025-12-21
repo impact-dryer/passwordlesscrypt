@@ -97,7 +97,7 @@ export async function decryptData(
  * @param data - Object to encrypt
  * @returns Base64-encoded encrypted string
  */
-export async function encryptObject<T>(key: CryptoKey, data: T): Promise<string> {
+export async function encryptObject(key: CryptoKey, data: unknown): Promise<string> {
   const json = JSON.stringify(data);
   const plaintext = stringToBytes(json);
   const encrypted = await encryptData(key, plaintext);

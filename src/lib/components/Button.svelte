@@ -1,9 +1,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
+  type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+  type ButtonSize = 'sm' | 'md' | 'lg';
+
   interface Props {
-    variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
-    size?: 'sm' | 'md' | 'lg';
+    variant?: ButtonVariant;
+    size?: ButtonSize;
     disabled?: boolean;
     loading?: boolean;
     type?: 'button' | 'submit' | 'reset';
@@ -26,27 +29,40 @@
   const baseStyles =
     'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed';
 
-  const variantStyles = {
-    primary:
+  const variantStylesMap = new Map<ButtonVariant, string>([
+    [
+      'primary',
       'bg-primary-500 text-white hover:bg-primary-600 focus-visible:ring-primary-500 shadow-lg shadow-primary-500/20',
-    secondary:
+    ],
+    [
+      'secondary',
       'bg-surface-elevated text-text-primary border border-border hover:bg-border hover:border-text-muted focus-visible:ring-primary-500',
-    danger: 'bg-danger-500 text-white hover:bg-danger-600 focus-visible:ring-danger-500',
-    ghost:
+    ],
+    ['danger', 'bg-danger-500 text-white hover:bg-danger-600 focus-visible:ring-danger-500'],
+    [
+      'ghost',
       'bg-transparent text-text-secondary hover:text-text-primary hover:bg-surface-elevated focus-visible:ring-primary-500',
-  };
+    ],
+  ]);
 
-  const sizeStyles = {
-    sm: 'text-sm px-3 py-1.5 gap-1.5',
-    md: 'text-sm px-4 py-2 gap-2',
-    lg: 'text-base px-6 py-3 gap-2',
-  };
+  const sizeStylesMap = new Map<ButtonSize, string>([
+    ['sm', 'text-sm px-3 py-1.5 gap-1.5'],
+    ['md', 'text-sm px-4 py-2 gap-2'],
+    ['lg', 'text-base px-6 py-3 gap-2'],
+  ]);
+
+  function getVariantStyles(v: ButtonVariant): string {
+    return variantStylesMap.get(v) ?? '';
+  }
+
+  function getSizeStyles(s: ButtonSize): string {
+    return sizeStylesMap.get(s) ?? '';
+  }
 </script>
 
-<!-- eslint-disable-next-line security/detect-object-injection -->
 <button
   {type}
-  class="{baseStyles} {variantStyles[variant]} {sizeStyles[size]} {className}"
+  class="{baseStyles} {getVariantStyles(variant)} {getSizeStyles(size)} {className}"
   disabled={disabled || loading}
   {onclick}
 >

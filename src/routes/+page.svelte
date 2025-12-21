@@ -100,7 +100,7 @@
 
   // Update filtered items when search changes
   $effect(() => {
-    if (vaultState?.isUnlocked) {
+    if (vaultState?.isUnlocked === true) {
       if (searchQuery.trim() !== '') {
         filteredItems = searchVaultItems(searchQuery);
       } else {
@@ -367,14 +367,22 @@
   {#if isLoading}
     <LoadingView />
   {:else if currentView === 'setup'}
-    <SetupView {capabilities} {compatibilityMessage} onsetup={() => (showSetupModal = true)} />
+    <SetupView
+      {capabilities}
+      {compatibilityMessage}
+      onsetup={() => {
+        showSetupModal = true;
+      }}
+    />
   {:else if currentView === 'locked'}
     <LockedView credentials={vaultState?.credentials ?? []} {isUnlocking} onunlock={handleUnlock} />
   {:else if currentView === 'vault' || currentView === 'settings'}
     <VaultHeader
       itemCount={vaultState?.metadata?.itemCount ?? 0}
       showSettings={currentView === 'settings'}
-      ontogglesettings={() => (currentView = currentView === 'settings' ? 'vault' : 'settings')}
+      ontogglesettings={() => {
+        currentView = currentView === 'settings' ? 'vault' : 'settings';
+      }}
       onlock={handleLock}
     />
 
@@ -382,15 +390,21 @@
       <SettingsView
         credentials={vaultState?.credentials ?? []}
         currentCredentialId={vaultState?.currentCredentialId ?? null}
-        onaddpasskey={() => (showAddPasskeyModal = true)}
+        onaddpasskey={() => {
+          showAddPasskeyModal = true;
+        }}
         ondeletepasskey={openDeletePasskeyModal}
       />
     {:else}
       <VaultContentView
         items={filteredItems}
         {searchQuery}
-        onsearchchange={(q) => (searchQuery = q)}
-        onadditem={() => (showAddItemModal = true)}
+        onsearchchange={(q: string) => {
+          searchQuery = q;
+        }}
+        onadditem={() => {
+          showAddItemModal = true;
+        }}
         onedititem={openEditModal}
         ondeleteitem={openDeleteModal}
       />
@@ -407,10 +421,16 @@
   userName={setupUserName}
   passkeyName={setupPasskeyName}
   isLoading={isSettingUp}
-  onclose={() => (showSetupModal = false)}
+  onclose={() => {
+    showSetupModal = false;
+  }}
   onsubmit={handleSetup}
-  onusernamechange={(v) => (setupUserName = v)}
-  onpasskeynamechange={(v) => (setupPasskeyName = v)}
+  onusernamechange={(v: string) => {
+    setupUserName = v;
+  }}
+  onpasskeynamechange={(v: string) => {
+    setupPasskeyName = v;
+  }}
 />
 
 <!-- Add Item Modal -->
@@ -428,12 +448,24 @@
     resetItemForm();
   }}
   onsubmit={handleAddItem}
-  ongeneratepassword={() => (newItemContent = generateSecurePassword(24))}
-  ontypechange={(t) => (newItemType = t)}
-  ontitlechange={(v) => (newItemTitle = v)}
-  oncontentchange={(v) => (newItemContent = v)}
-  onurlchange={(v) => (newItemUrl = v)}
-  onusernamechange={(v) => (newItemUsername = v)}
+  ongeneratepassword={() => {
+    newItemContent = generateSecurePassword(24);
+  }}
+  ontypechange={(t: 'note' | 'password' | 'secret') => {
+    newItemType = t;
+  }}
+  ontitlechange={(v: string) => {
+    newItemTitle = v;
+  }}
+  oncontentchange={(v: string) => {
+    newItemContent = v;
+  }}
+  onurlchange={(v: string) => {
+    newItemUrl = v;
+  }}
+  onusernamechange={(v: string) => {
+    newItemUsername = v;
+  }}
 />
 
 <!-- Edit Item Modal -->
@@ -452,12 +484,24 @@
     resetItemForm();
   }}
   onsubmit={handleUpdateItem}
-  ongeneratepassword={() => (newItemContent = generateSecurePassword(24))}
-  ontypechange={(t) => (newItemType = t)}
-  ontitlechange={(v) => (newItemTitle = v)}
-  oncontentchange={(v) => (newItemContent = v)}
-  onurlchange={(v) => (newItemUrl = v)}
-  onusernamechange={(v) => (newItemUsername = v)}
+  ongeneratepassword={() => {
+    newItemContent = generateSecurePassword(24);
+  }}
+  ontypechange={(t: 'note' | 'password' | 'secret') => {
+    newItemType = t;
+  }}
+  ontitlechange={(v: string) => {
+    newItemTitle = v;
+  }}
+  oncontentchange={(v: string) => {
+    newItemContent = v;
+  }}
+  onurlchange={(v: string) => {
+    newItemUrl = v;
+  }}
+  onusernamechange={(v: string) => {
+    newItemUsername = v;
+  }}
 />
 
 <!-- Delete Item Modal -->
@@ -486,7 +530,9 @@
     newPasskeyName = '';
   }}
   onsubmit={handleAddPasskey}
-  onpasskeyname={(v) => (newPasskeyName = v)}
+  onpasskeyname={(v: string) => {
+    newPasskeyName = v;
+  }}
 />
 
 <!-- Delete Passkey Modal -->

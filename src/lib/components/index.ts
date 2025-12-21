@@ -4,7 +4,9 @@ export { default as Card } from './Card.svelte';
 export { default as Icon } from './Icon.svelte';
 export { default as Input } from './Input.svelte';
 export { default as Modal } from './Modal.svelte';
-export { default as Toast, showToast } from './Toast.svelte';
+export { default as Toast } from './Toast.svelte';
+export { showToast, dismissToast, toasts } from './toast-utils';
+export type { ToastMessage } from './toast-utils';
 
 // Vault-specific components
 export { default as VaultItemCard } from './VaultItemCard.svelte';

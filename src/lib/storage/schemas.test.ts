@@ -54,7 +54,14 @@ describe('storage/schemas', () => {
     });
 
     it('should reject missing id', () => {
-      const { id, ...item } = validItem;
+      // Omit the id field to test validation
+      const item = {
+        type: validItem.type,
+        title: validItem.title,
+        content: validItem.content,
+        createdAt: validItem.createdAt,
+        modifiedAt: validItem.modifiedAt,
+      };
       const result = VaultItemSchema.safeParse(item);
       expect(result.success).toBe(false);
     });
@@ -131,13 +138,15 @@ describe('storage/schemas', () => {
     });
 
     it('should reject missing version', () => {
-      const { version, ...vault } = validVault;
+      // Omit the version field to test validation
+      const vault = { items: validVault.items };
       const result = VaultDataSchema.safeParse(vault);
       expect(result.success).toBe(false);
     });
 
     it('should reject missing items', () => {
-      const { items, ...vault } = validVault;
+      // Omit the items field to test validation
+      const vault = { version: validVault.version };
       const result = VaultDataSchema.safeParse(vault);
       expect(result.success).toBe(false);
     });
@@ -178,7 +187,12 @@ describe('storage/schemas', () => {
     });
 
     it('should reject missing fields', () => {
-      const { version, ...metadata } = validMetadata;
+      // Omit the version field to test validation
+      const metadata = {
+        createdAt: validMetadata.createdAt,
+        modifiedAt: validMetadata.modifiedAt,
+        itemCount: validMetadata.itemCount,
+      };
       const result = VaultMetadataSchema.safeParse(metadata);
       expect(result.success).toBe(false);
     });

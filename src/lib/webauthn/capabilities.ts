@@ -17,7 +17,10 @@ export async function detectCapabilities(): Promise<PlatformCapabilities> {
   };
 
   // Check basic WebAuthn support
-  if (!window.PublicKeyCredential || typeof window.PublicKeyCredential !== 'function') {
+  if (
+    typeof window.PublicKeyCredential === 'undefined' ||
+    typeof window.PublicKeyCredential !== 'function'
+  ) {
     return capabilities;
   }
 
@@ -53,7 +56,7 @@ export async function detectCapabilities(): Promise<PlatformCapabilities> {
         }
       ).getClientCapabilities();
 
-      if (clientCaps.extensions?.includes('prf')) {
+      if (clientCaps.extensions?.includes('prf') === true) {
         capabilities.prfSupported = true;
       }
     } else {
@@ -68,11 +71,11 @@ export async function detectCapabilities(): Promise<PlatformCapabilities> {
         const isSafari = /Safari\/(\d+)/.exec(ua) && !ua.includes('Chrome');
         const isFirefox = /Firefox\/(\d+)/.exec(ua);
 
-        if (isChrome && parseInt(isChrome[1] ?? '0', 10) >= 116) {
+        if (isChrome !== null && parseInt(isChrome[1] ?? '0', 10) >= 116) {
           capabilities.prfSupported = true;
-        } else if (isSafari && ua.includes('Version/18')) {
+        } else if (isSafari !== null && ua.includes('Version/18')) {
           capabilities.prfSupported = true;
-        } else if (isFirefox && parseInt(isFirefox[1] ?? '0', 10) >= 130) {
+        } else if (isFirefox !== null && parseInt(isFirefox[1] ?? '0', 10) >= 130) {
           capabilities.prfSupported = true;
         }
       }

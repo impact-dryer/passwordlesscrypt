@@ -2,7 +2,7 @@
   import type { VaultItem } from '$storage';
   import Icon from './Icon.svelte';
   import Button from './Button.svelte';
-  import { showToast } from './Toast.svelte';
+  import { showToast } from './toast-utils';
 
   interface Props {
     item: VaultItem;
@@ -21,7 +21,7 @@
     secret: 'key',
   } as const;
 
-  async function copyToClipboard() {
+  async function copyToClipboard(): Promise<void> {
     try {
       await navigator.clipboard.writeText(item.content);
       copied = true;
@@ -64,16 +64,18 @@
         </span>
       </div>
 
-      {#if item.url}
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="text-primary-400 hover:text-primary-300 mt-1 flex items-center gap-1 text-sm"
+      {#if item.url !== undefined && item.url !== ''}
+        {@const externalUrl = item.url.startsWith('http') ? item.url : `https://${item.url}`}
+        <button
+          type="button"
+          onclick={() => {
+            window.open(externalUrl, '_blank', 'noopener,noreferrer');
+          }}
+          class="text-primary-400 hover:text-primary-300 mt-1 flex cursor-pointer items-center gap-1 text-sm"
         >
           {item.url}
           <Icon name="external" size={12} />
-        </a>
+        </button>
       {/if}
 
       {#if item.username}

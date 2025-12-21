@@ -45,7 +45,7 @@ export function bytesToBase64Url(bytes: Uint8Array): string {
 export function base64UrlToBytes(base64url: string): Uint8Array {
   // Add padding if needed
   let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-  while (base64.length % 4) {
+  while (base64.length % 4 !== 0) {
     base64 += '=';
   }
   return base64ToBytes(base64);
@@ -67,9 +67,13 @@ export function constantTimeEquals(a: Uint8Array, b: Uint8Array): boolean {
   }
 
   let result = 0;
-  for (let i = 0; i < a.length; i++) {
+  const aLen = a.length;
+  for (let i = 0; i < aLen; i++) {
     // XOR bytes and OR into result - any difference will set bits
-    result |= (a[i] ?? 0) ^ (b[i] ?? 0);
+    // Using .at() for safe array access
+    const aVal = a.at(i) ?? 0;
+    const bVal = b.at(i) ?? 0;
+    result |= aVal ^ bVal;
   }
 
   return result === 0;

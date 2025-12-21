@@ -51,9 +51,11 @@ vi.mock('idb-keyval', () => {
 describe('storage/vault-storage', () => {
   beforeEach(async () => {
     // Clear the mock store before each test
-    const idbModule = await import('idb-keyval');
+    const idbModule = (await import('idb-keyval')) as {
+      __clearStore?: () => void;
+    };
 
-    const clearFn = (idbModule as any).__clearStore;
+    const clearFn = idbModule.__clearStore;
     if (typeof clearFn === 'function') {
       clearFn();
     }

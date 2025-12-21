@@ -38,7 +38,7 @@ let wrappedDEKs: {
   prfSalt: string;
 }[] = [];
 
-function resetStorage() {
+function resetStorage(): void {
   encryptedVault = undefined;
   metadata = undefined;
   credentials = [];
@@ -48,47 +48,58 @@ function resetStorage() {
 // Mock storage module
 vi.mock('$storage', () => {
   return {
-    saveEncryptedVault: vi.fn(async (data: string) => {
+    saveEncryptedVault: vi.fn((data: string) => {
       encryptedVault = data;
+      return Promise.resolve();
     }),
-    loadEncryptedVault: vi.fn(async () => encryptedVault),
-    saveVaultMetadata: vi.fn(async (data: typeof metadata) => {
+    loadEncryptedVault: vi.fn(() => Promise.resolve(encryptedVault)),
+    saveVaultMetadata: vi.fn((data: typeof metadata) => {
       metadata = data;
+      return Promise.resolve();
     }),
-    loadVaultMetadata: vi.fn(async () => metadata),
-    saveCredentials: vi.fn(async (data: typeof credentials) => {
+    loadVaultMetadata: vi.fn(() => Promise.resolve(metadata)),
+    saveCredentials: vi.fn((data: typeof credentials) => {
       credentials = [...data];
+      return Promise.resolve();
     }),
-    loadCredentials: vi.fn(async () => [...credentials]),
-    saveWrappedDEKs: vi.fn(async (data: typeof wrappedDEKs) => {
+    loadCredentials: vi.fn(() => Promise.resolve([...credentials])),
+    saveWrappedDEKs: vi.fn((data: typeof wrappedDEKs) => {
       wrappedDEKs = [...data];
+      return Promise.resolve();
     }),
-    loadWrappedDEKs: vi.fn(async () => [...wrappedDEKs]),
-    addCredential: vi.fn(async (cred: (typeof credentials)[0]) => {
+    loadWrappedDEKs: vi.fn(() => Promise.resolve([...wrappedDEKs])),
+    addCredential: vi.fn((cred: (typeof credentials)[0]) => {
       credentials.push(cred);
+      return Promise.resolve();
     }),
-    removeCredential: vi.fn(async (id: string) => {
+    removeCredential: vi.fn((id: string) => {
       credentials = credentials.filter((c) => c.id !== id);
+      return Promise.resolve();
     }),
-    addWrappedDEK: vi.fn(async (dek: (typeof wrappedDEKs)[0]) => {
+    addWrappedDEK: vi.fn((dek: (typeof wrappedDEKs)[0]) => {
       wrappedDEKs.push(dek);
+      return Promise.resolve();
     }),
-    removeWrappedDEK: vi.fn(async (credId: string) => {
+    removeWrappedDEK: vi.fn((credId: string) => {
       wrappedDEKs = wrappedDEKs.filter((d) => d.credentialId !== credId);
+      return Promise.resolve();
     }),
-    getWrappedDEKForCredential: vi.fn(async (credId: string) => {
-      return wrappedDEKs.find((d) => d.credentialId === credId);
+    getWrappedDEKForCredential: vi.fn((credId: string) => {
+      return Promise.resolve(wrappedDEKs.find((d) => d.credentialId === credId));
     }),
-    updateCredentialLastUsed: vi.fn(async () => {}),
-    vaultExists: vi.fn(async () => encryptedVault !== undefined && metadata !== undefined),
+    updateCredentialLastUsed: vi.fn(() => Promise.resolve()),
+    vaultExists: vi.fn(() =>
+      Promise.resolve(encryptedVault !== undefined && metadata !== undefined)
+    ),
     createInitialMetadata: vi.fn(() => ({
       version: 1,
       createdAt: Date.now(),
       modifiedAt: Date.now(),
       itemCount: 0,
     })),
-    clearAllVaultData: vi.fn(async () => {
+    clearAllVaultData: vi.fn(() => {
       resetStorage();
+      return Promise.resolve();
     }),
     validateVaultData: vi.fn((data: unknown) => data),
   };
@@ -106,27 +117,29 @@ vi.mock('$webauthn', () => {
   }
 
   return {
-    createCredential: vi.fn(async (_userName: string, passkeyName: string) => ({
-      credential: {
-        id: `cred-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        rawId: `raw-id-${Date.now()}`,
-        name: passkeyName,
-        createdAt: Date.now(),
-        lastUsedAt: Date.now(),
-        prfEnabled: true,
-        prfSalt: `salt-${Date.now()}`,
-        authenticatorType: 'platform',
-      },
-      prfOutput: new Uint8Array(32).fill(0x42),
-    })),
-    authenticateWithAnyCredential: vi.fn(async (creds: { id: string }[]) => {
+    createCredential: vi.fn((_userName: string, passkeyName: string) =>
+      Promise.resolve({
+        credential: {
+          id: `cred-${String(Date.now())}-${Math.random().toString(36).slice(2)}`,
+          rawId: `raw-id-${String(Date.now())}`,
+          name: passkeyName,
+          createdAt: Date.now(),
+          lastUsedAt: Date.now(),
+          prfEnabled: true,
+          prfSalt: `salt-${String(Date.now())}`,
+          authenticatorType: 'platform',
+        },
+        prfOutput: new Uint8Array(32).fill(0x42),
+      })
+    ),
+    authenticateWithAnyCredential: vi.fn((creds: { id: string }[]) => {
       if (creds.length === 0) {
-        throw new WebAuthnError('no-credentials', 'No passkeys registered');
+        return Promise.reject(new WebAuthnError('no-credentials', 'No passkeys registered'));
       }
-      return {
+      return Promise.resolve({
         credentialId: creds[0]?.id ?? 'unknown',
         prfOutput: new Uint8Array(32).fill(0x42),
-      };
+      });
     }),
     WebAuthnError,
   };
@@ -135,33 +148,25 @@ vi.mock('$webauthn', () => {
 // Mock crypto module
 vi.mock('$crypto', () => {
   return {
-    deriveKEK: vi.fn(async () => {
-      return crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, [
-        'wrapKey',
-        'unwrapKey',
-      ]);
-    }),
-    generateDEK: vi.fn(async () => {
-      return crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, [
-        'encrypt',
-        'decrypt',
-      ]);
-    }),
-    unwrapDEK: vi.fn(async () => {
-      return crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, [
-        'encrypt',
-        'decrypt',
-      ]);
-    }),
-    encryptObject: vi.fn(async () => 'encrypted-data'),
-    decryptObject: vi.fn(async () => ({ version: 1, items: [] })),
+    deriveKEK: vi.fn(() =>
+      crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['wrapKey', 'unwrapKey'])
+    ),
+    generateDEK: vi.fn(() =>
+      crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt'])
+    ),
+    unwrapDEK: vi.fn(() =>
+      crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt'])
+    ),
+    encryptObject: vi.fn(() => Promise.resolve('encrypted-data')),
+    decryptObject: vi.fn(() => Promise.resolve({ version: 1, items: [] })),
     createWrappedDEKForCredential: vi.fn(
-      async (_dek: CryptoKey, _kek: CryptoKey, credId: string, prfSalt: string) => ({
-        credentialId: credId,
-        wrappedKey: 'wrapped-key-base64',
-        createdAt: Date.now(),
-        prfSalt,
-      })
+      (_dek: CryptoKey, _kek: CryptoKey, credId: string, prfSalt: string) =>
+        Promise.resolve({
+          credentialId: credId,
+          wrappedKey: 'wrapped-key-base64',
+          createdAt: Date.now(),
+          prfSalt,
+        })
     ),
     VAULT_VERSION: 1,
   };
@@ -175,39 +180,47 @@ describe('services/vault-service', () => {
 
     // Re-establish mock implementations after reset
     const storage = await import('$storage');
-    vi.mocked(storage.saveEncryptedVault).mockImplementation(async (data: string) => {
+    vi.mocked(storage.saveEncryptedVault).mockImplementation((data: string) => {
       encryptedVault = data;
+      return Promise.resolve();
     });
-    vi.mocked(storage.loadEncryptedVault).mockImplementation(async () => encryptedVault);
-    vi.mocked(storage.saveVaultMetadata).mockImplementation(async (data) => {
+    vi.mocked(storage.loadEncryptedVault).mockImplementation(() => Promise.resolve(encryptedVault));
+    vi.mocked(storage.saveVaultMetadata).mockImplementation((data) => {
       metadata = data as typeof metadata;
+      return Promise.resolve();
     });
-    vi.mocked(storage.loadVaultMetadata).mockImplementation(async () => metadata);
-    vi.mocked(storage.saveCredentials).mockImplementation(async (data) => {
+    vi.mocked(storage.loadVaultMetadata).mockImplementation(() => Promise.resolve(metadata));
+    vi.mocked(storage.saveCredentials).mockImplementation((data) => {
       credentials = [...data] as typeof credentials;
+      return Promise.resolve();
     });
-    vi.mocked(storage.loadCredentials).mockImplementation(async () => [...credentials]);
-    vi.mocked(storage.saveWrappedDEKs).mockImplementation(async (data) => {
+    vi.mocked(storage.loadCredentials).mockImplementation(() => Promise.resolve([...credentials]));
+    vi.mocked(storage.saveWrappedDEKs).mockImplementation((data) => {
       wrappedDEKs = [...data] as typeof wrappedDEKs;
+      return Promise.resolve();
     });
-    vi.mocked(storage.addCredential).mockImplementation(async (cred) => {
+    vi.mocked(storage.addCredential).mockImplementation((cred) => {
       credentials.push(cred as (typeof credentials)[0]);
+      return Promise.resolve();
     });
-    vi.mocked(storage.removeCredential).mockImplementation(async (id: string) => {
+    vi.mocked(storage.removeCredential).mockImplementation((id: string) => {
       credentials = credentials.filter((c) => c.id !== id);
+      return Promise.resolve();
     });
-    vi.mocked(storage.addWrappedDEK).mockImplementation(async (dek) => {
+    vi.mocked(storage.addWrappedDEK).mockImplementation((dek) => {
       wrappedDEKs.push(dek as (typeof wrappedDEKs)[0]);
+      return Promise.resolve();
     });
-    vi.mocked(storage.removeWrappedDEK).mockImplementation(async (credId: string) => {
+    vi.mocked(storage.removeWrappedDEK).mockImplementation((credId: string) => {
       wrappedDEKs = wrappedDEKs.filter((d) => d.credentialId !== credId);
+      return Promise.resolve();
     });
-    vi.mocked(storage.getWrappedDEKForCredential).mockImplementation(async (credId: string) => {
-      return wrappedDEKs.find((d) => d.credentialId === credId);
+    vi.mocked(storage.getWrappedDEKForCredential).mockImplementation((credId: string) => {
+      return Promise.resolve(wrappedDEKs.find((d) => d.credentialId === credId));
     });
-    vi.mocked(storage.updateCredentialLastUsed).mockImplementation(async () => {});
-    vi.mocked(storage.vaultExists).mockImplementation(
-      async () => encryptedVault !== undefined && metadata !== undefined
+    vi.mocked(storage.updateCredentialLastUsed).mockImplementation(() => Promise.resolve());
+    vi.mocked(storage.vaultExists).mockImplementation(() =>
+      Promise.resolve(encryptedVault !== undefined && metadata !== undefined)
     );
     vi.mocked(storage.createInitialMetadata).mockImplementation(() => ({
       version: 1,
@@ -215,10 +228,13 @@ describe('services/vault-service', () => {
       modifiedAt: Date.now(),
       itemCount: 0,
     }));
-    vi.mocked(storage.clearAllVaultData).mockImplementation(async () => {
+    vi.mocked(storage.clearAllVaultData).mockImplementation(() => {
       resetStorage();
+      return Promise.resolve();
     });
-    vi.mocked(storage.validateVaultData).mockImplementation((data: unknown) => data as any);
+    vi.mocked(storage.validateVaultData).mockImplementation(
+      (data: unknown) => data as ReturnType<typeof storage.validateVaultData>
+    );
   });
 
   describe('getVaultState', () => {
@@ -389,7 +405,7 @@ describe('services/vault-service', () => {
       // Should have numbers
       expect(allChars).toMatch(/[0-9]/);
       // Should have special chars
-      expect(allChars).toMatch(/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/);
+      expect(allChars).toMatch(/[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/);
     });
   });
 
@@ -476,18 +492,24 @@ describe('services/vault-service', () => {
       const secondCred = credsAfterSetup.find((c) => c.name === 'Second');
       expect(secondCred).toBeDefined();
 
-      const creds = await removePasskey(secondCred!.id);
-      expect(creds.some((c) => c.id === secondCred!.id)).toBe(false);
+      if (secondCred === undefined) {
+        throw new Error('Second credential not found');
+      }
+      const creds = await removePasskey(secondCred.id);
+      expect(creds.some((c) => c.id === secondCred.id)).toBe(false);
     });
 
     it('should throw when trying to remove last passkey', async () => {
       await setupVault('User', 'Only Key');
 
       const state = getVaultState();
-      const credId = state.credentials[0]?.id;
-      expect(credId).toBeDefined();
+      const firstCred = state.credentials[0];
+      expect(firstCred).toBeDefined();
 
-      await expect(removePasskey(credId!)).rejects.toThrow('Cannot remove the last passkey');
+      if (firstCred === undefined) {
+        throw new Error('No credential found');
+      }
+      await expect(removePasskey(firstCred.id)).rejects.toThrow('Cannot remove the last passkey');
     });
 
     it('should throw when passkey not found', async () => {

@@ -71,8 +71,10 @@ declare global {
 
 globalThis.hexToBytes = (hex: string): Uint8Array => {
   const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  const len = bytes.length;
+  for (let i = 0; i < len; i++) {
+    const byteValue = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    bytes.set([byteValue], i);
   }
   return bytes;
 };

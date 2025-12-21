@@ -13,13 +13,13 @@
 
   const { open, title, description, onclose, children, footer }: Props = $props();
 
-  function handleKeydown(event: KeyboardEvent) {
+  function handleKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
       onclose();
     }
   }
 
-  function handleBackdropClick(event: MouseEvent) {
+  function handleBackdropClick(event: MouseEvent): void {
     if (event.target === event.currentTarget) {
       onclose();
     }
@@ -29,7 +29,6 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if open}
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
     role="dialog"
     aria-modal="true"

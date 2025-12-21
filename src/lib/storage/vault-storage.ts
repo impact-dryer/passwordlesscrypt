@@ -172,7 +172,7 @@ export async function exportVaultData(): Promise<StoredVaultData | null> {
     loadWrappedDEKs(),
   ]);
 
-  if (!encryptedVault || !metadata) {
+  if (encryptedVault === undefined || metadata === undefined) {
     return null;
   }
 

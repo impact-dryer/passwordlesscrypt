@@ -163,12 +163,12 @@ describe('crypto/kdf', () => {
   });
 
   describe('domain separation', () => {
-    it('should use correct info string for KEK', async () => {
+    it('should use correct info string for KEK', () => {
       // This test verifies the HKDF_INFO constants are used correctly
       expect(HKDF_INFO.KEK).toBe('Passwordless Encryption KEK V1');
     });
 
-    it('should use correct info string for DEK', async () => {
+    it('should use correct info string for DEK', () => {
       expect(HKDF_INFO.DEK).toBe('Passwordless Encryption DEK V1');
     });
   });

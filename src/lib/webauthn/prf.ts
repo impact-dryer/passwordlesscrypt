@@ -99,9 +99,12 @@ export async function createCredential(
 
   // Determine authenticator type from response
   const response = credential.response as AuthenticatorAttestationResponse;
-  const authenticatorType = response.getTransports?.().includes('internal')
-    ? 'platform'
-    : 'cross-platform';
+  // getTransports() may not be available in older browsers, check if method exists
+  let transports: string[] = [];
+  if ('getTransports' in response && typeof response.getTransports === 'function') {
+    transports = response.getTransports();
+  }
+  const authenticatorType = transports.includes('internal') ? 'platform' : 'cross-platform';
 
   const storedCredential: StoredCredential = {
     id: credential.id,

@@ -11,14 +11,12 @@ describe('webauthn/capabilities', () => {
   });
 
   afterEach(() => {
-    // Restore original values
-    if (originalPublicKeyCredential) {
-      Object.defineProperty(globalThis, 'PublicKeyCredential', {
-        value: originalPublicKeyCredential,
-        writable: true,
-        configurable: true,
-      });
-    }
+    // Restore original values - PublicKeyCredential may not exist in test environment
+    Object.defineProperty(globalThis, 'PublicKeyCredential', {
+      value: originalPublicKeyCredential,
+      writable: true,
+      configurable: true,
+    });
     Object.defineProperty(globalThis.navigator, 'userAgent', {
       value: originalNavigator.userAgent,
       writable: true,
@@ -40,7 +38,9 @@ describe('webauthn/capabilities', () => {
 
     it('should detect webAuthnSupported when PublicKeyCredential exists', async () => {
       Object.defineProperty(globalThis, 'PublicKeyCredential', {
-        value: function PublicKeyCredential() {},
+        value: function PublicKeyCredential(): void {
+          // Mock constructor
+        },
         writable: true,
         configurable: true,
       });
@@ -53,9 +53,14 @@ describe('webauthn/capabilities', () => {
       const mockIsAvailable = vi.fn().mockResolvedValue(true);
 
       Object.defineProperty(globalThis, 'PublicKeyCredential', {
-        value: Object.assign(function PublicKeyCredential() {}, {
-          isUserVerifyingPlatformAuthenticatorAvailable: mockIsAvailable,
-        }),
+        value: Object.assign(
+          function PublicKeyCredential(): void {
+            // Mock constructor
+          },
+          {
+            isUserVerifyingPlatformAuthenticatorAvailable: mockIsAvailable,
+          }
+        ),
         writable: true,
         configurable: true,
       });
@@ -69,9 +74,14 @@ describe('webauthn/capabilities', () => {
       const mockIsAvailable = vi.fn().mockRejectedValue(new Error('Not available'));
 
       Object.defineProperty(globalThis, 'PublicKeyCredential', {
-        value: Object.assign(function PublicKeyCredential() {}, {
-          isUserVerifyingPlatformAuthenticatorAvailable: mockIsAvailable,
-        }),
+        value: Object.assign(
+          function PublicKeyCredential(): void {
+            // Mock constructor
+          },
+          {
+            isUserVerifyingPlatformAuthenticatorAvailable: mockIsAvailable,
+          }
+        ),
         writable: true,
         configurable: true,
       });
@@ -84,9 +94,14 @@ describe('webauthn/capabilities', () => {
       const mockIsConditional = vi.fn().mockResolvedValue(true);
 
       Object.defineProperty(globalThis, 'PublicKeyCredential', {
-        value: Object.assign(function PublicKeyCredential() {}, {
-          isConditionalMediationAvailable: mockIsConditional,
-        }),
+        value: Object.assign(
+          function PublicKeyCredential(): void {
+            // Mock constructor
+          },
+          {
+            isConditionalMediationAvailable: mockIsConditional,
+          }
+        ),
         writable: true,
         configurable: true,
       });
@@ -102,9 +117,14 @@ describe('webauthn/capabilities', () => {
       });
 
       Object.defineProperty(globalThis, 'PublicKeyCredential', {
-        value: Object.assign(function PublicKeyCredential() {}, {
-          getClientCapabilities: mockGetClientCapabilities,
-        }),
+        value: Object.assign(
+          function PublicKeyCredential(): void {
+            // Mock constructor
+          },
+          {
+            getClientCapabilities: mockGetClientCapabilities,
+          }
+        ),
         writable: true,
         configurable: true,
       });
@@ -120,9 +140,14 @@ describe('webauthn/capabilities', () => {
       });
 
       Object.defineProperty(globalThis, 'PublicKeyCredential', {
-        value: Object.assign(function PublicKeyCredential() {}, {
-          getClientCapabilities: mockGetClientCapabilities,
-        }),
+        value: Object.assign(
+          function PublicKeyCredential(): void {
+            // Mock constructor
+          },
+          {
+            getClientCapabilities: mockGetClientCapabilities,
+          }
+        ),
         writable: true,
         configurable: true,
       });
@@ -135,9 +160,14 @@ describe('webauthn/capabilities', () => {
       const mockGetClientCapabilities = vi.fn().mockRejectedValue(new Error('Not supported'));
 
       Object.defineProperty(globalThis, 'PublicKeyCredential', {
-        value: Object.assign(function PublicKeyCredential() {}, {
-          getClientCapabilities: mockGetClientCapabilities,
-        }),
+        value: Object.assign(
+          function PublicKeyCredential(): void {
+            // Mock constructor
+          },
+          {
+            getClientCapabilities: mockGetClientCapabilities,
+          }
+        ),
         writable: true,
         configurable: true,
       });
@@ -150,15 +180,176 @@ describe('webauthn/capabilities', () => {
       const mockIsConditional = vi.fn().mockRejectedValue(new Error('Failed'));
 
       Object.defineProperty(globalThis, 'PublicKeyCredential', {
-        value: Object.assign(function PublicKeyCredential() {}, {
-          isConditionalMediationAvailable: mockIsConditional,
-        }),
+        value: Object.assign(
+          function PublicKeyCredential(): void {
+            // Mock constructor
+          },
+          {
+            isConditionalMediationAvailable: mockIsConditional,
+          }
+        ),
         writable: true,
         configurable: true,
       });
 
       const caps = await detectCapabilities();
       expect(caps.conditionalMediationAvailable).toBe(false);
+    });
+
+    it('should detect PRF support via Chrome 116+ user agent fallback', async () => {
+      Object.defineProperty(globalThis, 'PublicKeyCredential', {
+        value: function PublicKeyCredential(): void {
+          // Mock constructor - no getClientCapabilities
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      // Ensure navigator.credentials exists for isModernBrowser check
+      Object.defineProperty(globalThis.navigator, 'credentials', {
+        value: {},
+        writable: true,
+        configurable: true,
+      });
+
+      Object.defineProperty(globalThis.navigator, 'userAgent', {
+        value: 'Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36',
+        writable: true,
+        configurable: true,
+      });
+
+      const caps = await detectCapabilities();
+      expect(caps.prfSupported).toBe(true);
+    });
+
+    it('should detect PRF support via Safari 18 user agent fallback', async () => {
+      Object.defineProperty(globalThis, 'PublicKeyCredential', {
+        value: function PublicKeyCredential(): void {
+          // Mock constructor - no getClientCapabilities
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      // Ensure navigator.credentials exists for isModernBrowser check
+      Object.defineProperty(globalThis.navigator, 'credentials', {
+        value: {},
+        writable: true,
+        configurable: true,
+      });
+
+      Object.defineProperty(globalThis.navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15',
+        writable: true,
+        configurable: true,
+      });
+
+      const caps = await detectCapabilities();
+      expect(caps.prfSupported).toBe(true);
+    });
+
+    it('should detect PRF support via Firefox 130+ user agent fallback', async () => {
+      Object.defineProperty(globalThis, 'PublicKeyCredential', {
+        value: function PublicKeyCredential(): void {
+          // Mock constructor - no getClientCapabilities
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      // Ensure navigator.credentials exists for isModernBrowser check
+      Object.defineProperty(globalThis.navigator, 'credentials', {
+        value: {},
+        writable: true,
+        configurable: true,
+      });
+
+      Object.defineProperty(globalThis.navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0',
+        writable: true,
+        configurable: true,
+      });
+
+      const caps = await detectCapabilities();
+      expect(caps.prfSupported).toBe(true);
+    });
+
+    it('should not detect PRF support for older Chrome versions', async () => {
+      Object.defineProperty(globalThis, 'PublicKeyCredential', {
+        value: function PublicKeyCredential(): void {
+          // Mock constructor - no getClientCapabilities
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      // Ensure navigator.credentials exists for isModernBrowser check
+      Object.defineProperty(globalThis.navigator, 'credentials', {
+        value: {},
+        writable: true,
+        configurable: true,
+      });
+
+      Object.defineProperty(globalThis.navigator, 'userAgent', {
+        value: 'Mozilla/5.0 Chrome/100.0.0.0 Safari/537.36',
+        writable: true,
+        configurable: true,
+      });
+
+      const caps = await detectCapabilities();
+      expect(caps.prfSupported).toBe(false);
+    });
+
+    it('should not detect PRF support for older Firefox versions', async () => {
+      Object.defineProperty(globalThis, 'PublicKeyCredential', {
+        value: function PublicKeyCredential(): void {
+          // Mock constructor - no getClientCapabilities
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      // Ensure navigator.credentials exists for isModernBrowser check
+      Object.defineProperty(globalThis.navigator, 'credentials', {
+        value: {},
+        writable: true,
+        configurable: true,
+      });
+
+      Object.defineProperty(globalThis.navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0',
+        writable: true,
+        configurable: true,
+      });
+
+      const caps = await detectCapabilities();
+      expect(caps.prfSupported).toBe(false);
+    });
+
+    it('should not detect PRF support for unknown browsers', async () => {
+      Object.defineProperty(globalThis, 'PublicKeyCredential', {
+        value: function PublicKeyCredential(): void {
+          // Mock constructor - no getClientCapabilities
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      // Ensure navigator.credentials exists for isModernBrowser check
+      Object.defineProperty(globalThis.navigator, 'credentials', {
+        value: {},
+        writable: true,
+        configurable: true,
+      });
+
+      Object.defineProperty(globalThis.navigator, 'userAgent', {
+        value: 'Mozilla/5.0 Unknown/1.0',
+        writable: true,
+        configurable: true,
+      });
+
+      const caps = await detectCapabilities();
+      expect(caps.prfSupported).toBe(false);
     });
   });
 
