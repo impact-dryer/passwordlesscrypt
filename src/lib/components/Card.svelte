@@ -8,12 +8,7 @@
     children: Snippet;
   }
 
-  const {
-    variant = 'default',
-    padding = 'md',
-    class: className = '',
-    children,
-  }: Props = $props();
+  const { variant = 'default', padding = 'md', class: className = '', children }: Props = $props();
 
   const baseStyles = 'rounded-xl transition-all duration-200';
 
@@ -35,5 +30,3 @@
 <div class="{baseStyles} {variantStyles[variant]} {paddingStyles[padding]} {className}">
   {@render children()}
 </div>
-
-

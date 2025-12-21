@@ -5,7 +5,9 @@ import '@testing-library/svelte/vitest';
 const originalGetRandomValues = globalThis.crypto.getRandomValues.bind(globalThis.crypto);
 
 export function mockRandomValues(mockFn: (array: Uint8Array) => Uint8Array): void {
-  vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(mockFn as typeof crypto.getRandomValues);
+  vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(
+    mockFn as typeof crypto.getRandomValues
+  );
 }
 
 export function restoreRandomValues(): void {

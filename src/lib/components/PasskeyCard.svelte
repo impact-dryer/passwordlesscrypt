@@ -24,13 +24,13 @@
 </script>
 
 <div
-  class="flex items-center gap-4 p-4 bg-surface-elevated border rounded-xl transition-all duration-200 {isCurrentSession
+  class="bg-surface-elevated flex items-center gap-4 rounded-xl border p-4 transition-all duration-200 {isCurrentSession
     ? 'border-primary-500 shadow-glow'
     : 'border-border hover:border-text-muted'}"
 >
   <!-- Icon -->
   <div
-    class="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center {credential.authenticatorType ===
+    class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl {credential.authenticatorType ===
     'platform'
       ? 'bg-accent-500/10'
       : 'bg-primary-500/10'}"
@@ -43,19 +43,19 @@
   </div>
 
   <!-- Info -->
-  <div class="flex-1 min-w-0">
+  <div class="min-w-0 flex-1">
     <div class="flex items-center gap-2">
-      <h3 class="font-medium text-text-primary truncate">{credential.name}</h3>
+      <h3 class="text-text-primary truncate font-medium">{credential.name}</h3>
       {#if isCurrentSession}
-        <span class="text-xs px-2 py-0.5 rounded-full bg-primary-500/20 text-primary-400">
+        <span class="bg-primary-500/20 text-primary-400 rounded-full px-2 py-0.5 text-xs">
           Current session
         </span>
       {/if}
     </div>
-    <p class="text-sm text-text-secondary mt-0.5">
+    <p class="text-text-secondary mt-0.5 text-sm">
       {credential.authenticatorType === 'platform' ? 'Built-in authenticator' : 'Security key'}
     </p>
-    <p class="text-xs text-text-muted mt-1">
+    <p class="text-text-muted mt-1 text-xs">
       Last used: {formatDate(credential.lastUsedAt)}
     </p>
   </div>
@@ -67,5 +67,3 @@
     </Button>
   {/if}
 </div>
-
-

@@ -18,12 +18,7 @@
   }
 </script>
 
-<Modal
-  {open}
-  title="Add Passkey"
-  description="Add another passkey for backup access"
-  {onclose}
->
+<Modal {open} title="Add Passkey" description="Add another passkey for backup access" {onclose}>
   <div class="space-y-4">
     <Input
       label="Passkey Name"
@@ -31,7 +26,7 @@
       value={passkeyName}
       oninput={handleInput}
     />
-    <p class="text-xs text-text-muted">
+    <p class="text-text-muted text-xs">
       You'll be prompted to authenticate with your device's biometrics or security key.
     </p>
   </div>

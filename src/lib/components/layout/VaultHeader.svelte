@@ -11,16 +11,16 @@
   const { itemCount, showSettings, ontogglesettings, onlock }: Props = $props();
 </script>
 
-<header class="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
-  <div class="max-w-4xl mx-auto px-4 py-4">
+<header class="bg-background/80 border-border sticky top-0 z-40 border-b backdrop-blur-lg">
+  <div class="mx-auto max-w-4xl px-4 py-4">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center">
+        <div class="bg-primary-500/10 flex h-10 w-10 items-center justify-center rounded-xl">
           <Icon name="shield" size={20} class="text-primary-400" />
         </div>
         <div>
-          <h1 class="font-semibold text-text-primary">Passwordless Vault</h1>
-          <p class="text-xs text-text-muted">{itemCount} items • Encrypted</p>
+          <h1 class="text-text-primary font-semibold">Passwordless Vault</h1>
+          <p class="text-text-muted text-xs">{itemCount} items • Encrypted</p>
         </div>
       </div>
 
@@ -36,5 +36,3 @@
     </div>
   </div>
 </header>
-
-

@@ -12,15 +12,15 @@
   const { icon = 'lock', title, description, children }: Props = $props();
 </script>
 
-<div class="flex flex-col items-center justify-center text-center py-12 px-4">
-  <div class="w-16 h-16 rounded-2xl bg-surface-elevated flex items-center justify-center mb-4">
+<div class="flex flex-col items-center justify-center px-4 py-12 text-center">
+  <div class="bg-surface-elevated mb-4 flex h-16 w-16 items-center justify-center rounded-2xl">
     <Icon name={icon} size={32} class="text-text-muted" />
   </div>
 
-  <h3 class="text-lg font-medium text-text-primary">{title}</h3>
+  <h3 class="text-text-primary text-lg font-medium">{title}</h3>
 
   {#if description}
-    <p class="mt-2 text-sm text-text-secondary max-w-sm">{description}</p>
+    <p class="text-text-secondary mt-2 max-w-sm text-sm">{description}</p>
   {/if}
 
   {#if children}
@@ -29,5 +29,3 @@
     </div>
   {/if}
 </div>
-
-

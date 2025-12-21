@@ -244,8 +244,8 @@ npm run test:unit
 
 ```typescript
 // Use aliases instead of relative paths
-import { encrypt } from '$crypto';        // src/lib/crypto
-import { Button } from '$components';     // src/lib/components
+import { encrypt } from '$crypto'; // src/lib/crypto
+import { Button } from '$components'; // src/lib/components
 import type { VaultItem } from '$storage'; // src/lib/storage
 ```
 
@@ -395,4 +395,3 @@ X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 Referrer-Policy: strict-origin-when-cross-origin
 ```
-

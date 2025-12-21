@@ -65,5 +65,3 @@ export function safeValidateVaultData(data: unknown): z.infer<typeof VaultDataSc
 export type ValidatedVaultItem = z.infer<typeof VaultItemSchema>;
 export type ValidatedVaultData = z.infer<typeof VaultDataSchema>;
 export type ValidatedVaultMetadata = z.infer<typeof VaultMetadataSchema>;
-
-

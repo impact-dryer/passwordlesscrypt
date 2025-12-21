@@ -3,5 +3,3 @@
  */
 
 export * from './vault-service';
-
-

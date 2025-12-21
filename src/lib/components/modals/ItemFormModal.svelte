@@ -74,15 +74,10 @@
     <ItemTypeSelector selected={itemType} onselect={ontypechange} />
 
     <div>
-      <label for="item-title" class="block text-sm font-medium text-text-secondary mb-1.5">
+      <label for="item-title" class="text-text-secondary mb-1.5 block text-sm font-medium">
         Title <span class="text-error-400">*</span>
       </label>
-      <Input
-        id="item-title"
-        placeholder="Enter a title"
-        value={title}
-        oninput={handleTitleInput}
-      />
+      <Input id="item-title" placeholder="Enter a title" value={title} oninput={handleTitleInput} />
     </div>
 
     {#if itemType === 'password'}
@@ -100,13 +95,13 @@
         oninput={handleUsernameInput}
       />
       <div>
-        <div class="flex items-center justify-between mb-1.5">
-          <label for="password-input" class="text-sm font-medium text-text-secondary"
+        <div class="mb-1.5 flex items-center justify-between">
+          <label for="password-input" class="text-text-secondary text-sm font-medium"
             >Password <span class="text-error-400">*</span></label
           >
           <button
             type="button"
-            class="text-xs text-primary-400 hover:text-primary-300"
+            class="text-primary-400 hover:text-primary-300 text-xs"
             onclick={ongeneratepassword}
           >
             {mode === 'add' ? 'Generate' : 'Generate new'}
@@ -122,7 +117,7 @@
       </div>
     {:else}
       <div>
-        <label for="content-textarea" class="block text-sm font-medium text-text-secondary mb-1.5">
+        <label for="content-textarea" class="text-text-secondary mb-1.5 block text-sm font-medium">
           Content <span class="text-error-400">*</span>
         </label>
         <textarea
@@ -131,7 +126,7 @@
           oninput={handleContentInput}
           placeholder="Enter your secret content"
           rows="4"
-          class="w-full bg-surface-elevated border border-border rounded-lg px-4 py-2.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none"
+          class="bg-surface-elevated border-border text-text-primary placeholder:text-text-muted focus:ring-primary-500 w-full resize-none rounded-lg border px-4 py-2.5 transition-all focus:border-transparent focus:ring-2 focus:outline-none"
         ></textarea>
       </div>
     {/if}

@@ -12,13 +12,13 @@
   const { credentials, currentCredentialId, onaddpasskey, ondeletepasskey }: Props = $props();
 </script>
 
-<div class="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
-  <h2 class="text-lg font-semibold text-text-primary mb-4">Passkeys</h2>
-  <p class="text-sm text-text-secondary mb-6">
+<div class="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
+  <h2 class="text-text-primary mb-4 text-lg font-semibold">Passkeys</h2>
+  <p class="text-text-secondary mb-6 text-sm">
     Manage the passkeys that can unlock your vault. Add multiple passkeys for backup access.
   </p>
 
-  <div class="space-y-3 mb-6">
+  <div class="mb-6 space-y-3">
     {#each credentials as credential (credential.id)}
       <PasskeyCard
         {credential}
@@ -36,5 +36,3 @@
     Add Passkey
   </Button>
 </div>
-
-

@@ -35,7 +35,7 @@
     aria-modal="true"
     aria-labelledby="modal-title"
     tabindex="-1"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+    class="animate-fade-in fixed inset-0 z-50 flex items-center justify-center p-4"
     onclick={handleBackdropClick}
     onkeydown={handleKeydown}
   >
@@ -44,21 +44,21 @@
 
     <!-- Modal -->
     <div
-      class="relative w-full max-w-md bg-surface-elevated rounded-2xl shadow-2xl shadow-black/40 animate-slide-up"
+      class="bg-surface-elevated animate-slide-up relative w-full max-w-md rounded-2xl shadow-2xl shadow-black/40"
     >
       <!-- Header -->
       <div class="flex items-start justify-between p-6 pb-0">
         <div>
-          <h2 id="modal-title" class="text-xl font-semibold text-text-primary">
+          <h2 id="modal-title" class="text-text-primary text-xl font-semibold">
             {title}
           </h2>
           {#if description}
-            <p class="mt-1 text-sm text-text-secondary">{description}</p>
+            <p class="text-text-secondary mt-1 text-sm">{description}</p>
           {/if}
         </div>
         <button
           type="button"
-          class="p-1 -m-1 text-text-muted hover:text-text-primary transition-colors rounded-lg hover:bg-surface"
+          class="text-text-muted hover:text-text-primary hover:bg-surface -m-1 rounded-lg p-1 transition-colors"
           onclick={onclose}
           aria-label="Close modal"
         >
@@ -80,5 +80,3 @@
     </div>
   </div>
 {/if}
-
-

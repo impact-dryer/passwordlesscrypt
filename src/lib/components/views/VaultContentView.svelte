@@ -20,11 +20,15 @@
   }
 </script>
 
-<div class="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
+<div class="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
   <!-- Search and add -->
-  <div class="flex items-center gap-3 mb-6">
-    <div class="flex-1 relative">
-      <Icon name="search" size={18} class="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+  <div class="mb-6 flex items-center gap-3">
+    <div class="relative flex-1">
+      <Icon
+        name="search"
+        size={18}
+        class="text-text-muted absolute top-1/2 left-3 -translate-y-1/2"
+      />
       <label for="vault-search" class="sr-only">Search vault</label>
       <input
         id="vault-search"
@@ -32,7 +36,7 @@
         placeholder="Search vault..."
         value={searchQuery}
         oninput={handleSearchInput}
-        class="w-full bg-surface border border-border rounded-lg pl-10 pr-4 py-2.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+        class="bg-surface border-border text-text-primary placeholder:text-text-muted focus:ring-primary-500 w-full rounded-lg border py-2.5 pr-4 pl-10 transition-all focus:border-transparent focus:ring-2 focus:outline-none"
       />
     </div>
     <Button variant="primary" onclick={onadditem}>
@@ -44,7 +48,11 @@
   <!-- Items list -->
   {#if items.length === 0}
     {#if searchQuery.trim() !== ''}
-      <EmptyState icon="search" title="No results found" description="Try a different search term" />
+      <EmptyState
+        icon="search"
+        title="No results found"
+        description="Try a different search term"
+      />
     {:else}
       <EmptyState
         icon="lock"
@@ -73,5 +81,3 @@
     </div>
   {/if}
 </div>
-
-
