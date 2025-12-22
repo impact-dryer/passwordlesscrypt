@@ -89,6 +89,25 @@ export default ts.config(
     },
   },
   {
+    files: ['e2e/**/*.ts'],
+    rules: {
+      // Relax rules for E2E tests
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/strict-boolean-expressions': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-confusing-void-expression': 'off',
+      'no-console': 'off',
+      curly: 'off',
+    },
+  },
+  {
     ignores: [
       'node_modules/',
       'build/',
