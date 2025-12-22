@@ -20,7 +20,7 @@ test.describe('Passkey Management', () => {
   /**
    * Helper to set up a vault and navigate to settings
    */
-  async function setupAndGoToSettings(page: import('@playwright/test').Page): Promise<boolean> {k
+  async function setupAndGoToSettings(page: import('@playwright/test').Page): Promise<boolean> {
     const setupPage = new SetupPage(page);
     const vaultPage = new VaultPage(page);
 
@@ -191,8 +191,10 @@ test.describe('Passkey Management', () => {
       // Try to submit empty form
       await addPasskeyModal.submit();
 
-      // Should show error
-      await expect(page.getByText(/required|fill|name/i)).toBeVisible({ timeout: 5000 });
+      // Should show error - be specific to match the toast, not "Passkey Name" label
+      await expect(page.getByText('Please enter a name for the passkey')).toBeVisible({
+        timeout: 5000,
+      });
     });
   });
 
@@ -289,9 +291,9 @@ test.describe('Passkey Management', () => {
       if (await deleteButton.isVisible({ timeout: 1000 }).catch(() => false)) {
         await deleteButton.click();
 
-        // Should show confirmation
+        // Should show confirmation dialog with warning
         await expect(page.getByRole('dialog')).toBeVisible();
-        await expect(page.getByText(/no longer|unable to unlock/i)).toBeVisible();
+        await expect(page.getByText('This passkey will no longer')).toBeVisible();
       }
     });
   });

@@ -98,6 +98,7 @@ export async function setupVirtualAuthenticator(
       hasUserVerification: config.hasUserVerification,
       isUserVerified: config.isUserVerified,
       automaticPresenceSimulation: config.automaticPresenceSimulation,
+      hasPrf: config.hasPrf,
     },
   });
 

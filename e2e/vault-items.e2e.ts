@@ -177,11 +177,13 @@ test.describe('Vault Items', () => {
       // Generate password
       await itemForm.generatePassword();
 
-      // Content field should have a value
-      const contentField = page
-        .locator('textarea, input[type="text"]')
-        .filter({ hasText: /.{10,}/ });
-      await expect(contentField.first()).toBeVisible();
+      // Password input should have a value (generated password is typically 16+ chars)
+      const passwordInput = page.locator('#password-input');
+      await expect(passwordInput).toBeVisible();
+      // Wait a moment for generation to complete
+      await page.waitForTimeout(500);
+      const generatedValue = await passwordInput.inputValue();
+      expect(generatedValue.length).toBeGreaterThanOrEqual(10);
     });
 
     test('should show validation error for empty fields', async ({
@@ -203,8 +205,8 @@ test.describe('Vault Items', () => {
       // Try to submit without filling fields
       await itemForm.submit();
 
-      // Should show error toast
-      await vaultPage.waitForToast(/fill|required|empty/i);
+      // Should show error toast - be specific to avoid matching "Your vault is empty"
+      await vaultPage.waitForToast(/fill.*required|required.*fields/i);
     });
 
     test('should close modal without saving', async ({
@@ -402,15 +404,15 @@ test.describe('Vault Items', () => {
       if (await deleteButton.isVisible({ timeout: 1000 }).catch(() => false)) {
         await deleteButton.click();
 
-        // Should show confirmation dialog
+        // Should show confirmation dialog with warning text
         await expect(page.getByRole('dialog')).toBeVisible();
-        await expect(page.getByText(/cannot be undone|permanently/i)).toBeVisible();
+        await expect(page.getByText('This action cannot be undone')).toBeVisible();
       }
     });
   });
 
   test.describe('Item Count', () => {
-    test('should update item count when adding items', async ({
+    test('should display added items in vault', async ({
       page,
       virtualAuthenticator: _virtualAuthenticator,
     }) => {
@@ -423,23 +425,26 @@ test.describe('Vault Items', () => {
         return;
       }
 
-      // Initial count should be 0
-      const countText = page.locator('text=/\\d+ items?/i');
-
       // Add first item
       await vaultPage.clickAddItem();
       await itemForm.createNoteItem('First Item', 'Content');
       await page.waitForTimeout(1000);
+
+      // Verify the item was added - look for it in the vault
+      await expect(page.getByText('First Item')).toBeVisible({ timeout: 5000 });
 
       // Add second item
       await vaultPage.clickAddItem();
       await itemForm.createNoteItem('Second Item', 'Content');
       await page.waitForTimeout(1000);
 
-      // Count should reflect items
-      if (await countText.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await expect(countText).toContainText(/[12] items?/);
-      }
+      // Verify the second item was added
+      await expect(page.getByText('Second Item')).toBeVisible({ timeout: 5000 });
+
+      // Both items should be visible in the vault
+      // Simply check that both items are present by their headings
+      await expect(page.getByRole('heading', { name: 'First Item' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Second Item' })).toBeVisible();
     });
   });
 });

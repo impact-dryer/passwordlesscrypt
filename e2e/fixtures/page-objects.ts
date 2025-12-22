@@ -47,7 +47,9 @@ export class BasePage {
    * Wait for toast with specific message
    */
   async waitForToast(message: string | RegExp): Promise<void> {
-    await expect(this.page.getByText(message)).toBeVisible({ timeout: 5000 });
+    // Toast has role="alert" or is contained in a toast container
+    const toast = this.page.locator('[role="alert"], [data-testid="toast"]');
+    await expect(toast.filter({ hasText: message })).toBeVisible({ timeout: 5000 });
   }
 }
 
@@ -138,9 +140,9 @@ export class VaultPage extends BasePage {
    * Check if vault content view is displayed
    */
   async isVisible(): Promise<boolean> {
-    // Look for vault header or add item button
-    const addButton = this.page.getByRole('button', { name: /add|new/i });
-    return addButton.isVisible().catch(() => false);
+    // Look for Lock button which is only visible in unlocked vault state
+    const lockButton = this.page.getByRole('button', { name: /^lock$/i });
+    return lockButton.isVisible().catch(() => false);
   }
 
   /**
@@ -216,10 +218,15 @@ export class VaultPage extends BasePage {
   }
 
   /**
-   * Click settings button
+   * Click settings button (it's an icon-only button near the lock button)
    */
   async openSettings(): Promise<void> {
-    await this.page.getByRole('button', { name: /settings|gear/i }).click();
+    // The settings button is a ghost button with an icon, positioned before the lock button
+    // Look for a button that's not the lock button, in the header area
+    const header = this.page.locator('header');
+    const buttons = header.getByRole('button');
+    // Settings is the first button (before Lock button)
+    await buttons.first().click();
   }
 
   /**
@@ -280,11 +287,21 @@ export class ItemFormModal extends BasePage {
    * Fill content field
    */
   async fillContent(content: string): Promise<void> {
-    // Content might be a textarea or input
-    const contentField = this.page
-      .locator('textarea[name="content"], input[name="content"], [data-testid="content-input"]')
-      .first();
-    await contentField.fill(content);
+    // For password type: input#password-input
+    // For note/secret type: textarea#content-textarea
+    const passwordInput = this.page.locator('#password-input');
+    const textareaInput = this.page.locator('#content-textarea');
+
+    if (await passwordInput.isVisible().catch(() => false)) {
+      await passwordInput.fill(content);
+    } else if (await textareaInput.isVisible().catch(() => false)) {
+      await textareaInput.fill(content);
+    } else {
+      // Fallback - look for any visible textarea or password input in the dialog
+      const dialog = this.page.getByRole('dialog');
+      const field = dialog.locator('textarea, input[type="password"]').first();
+      await field.fill(content);
+    }
   }
 
   /**
@@ -312,14 +329,25 @@ export class ItemFormModal extends BasePage {
    * Submit the form
    */
   async submit(): Promise<void> {
-    await this.page.getByRole('button', { name: /save|add|create|update/i }).click();
+    const dialog = this.page.getByRole('dialog');
+    // Submit button is "Add Item" or "Save Changes" in the dialog footer
+    const addButton = dialog.getByRole('button', { name: 'Add Item' });
+    const saveButton = dialog.getByRole('button', { name: 'Save Changes' });
+
+    if (await addButton.isVisible().catch(() => false)) {
+      await addButton.click();
+    } else {
+      await saveButton.click();
+    }
   }
 
   /**
    * Close the modal
    */
   async close(): Promise<void> {
-    await this.page.getByRole('button', { name: /cancel|close/i }).click();
+    const dialog = this.page.getByRole('dialog');
+    // Cancel button is labeled "Cancel" in the dialog footer
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
   }
 
   /**
@@ -375,17 +403,20 @@ export class ConfirmDeleteModal extends BasePage {
   }
 
   /**
-   * Confirm deletion
+   * Confirm deletion in the dialog
    */
   async confirm(): Promise<void> {
-    await this.page.getByRole('button', { name: /delete|remove|confirm/i }).click();
+    const dialog = this.page.getByRole('dialog');
+    // The confirm button in delete dialog is "Delete" (exact)
+    await dialog.getByRole('button', { name: 'Delete', exact: true }).click();
   }
 
   /**
    * Cancel deletion
    */
   async cancel(): Promise<void> {
-    await this.page.getByRole('button', { name: /cancel/i }).click();
+    const dialog = this.page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
   }
 }
 
@@ -427,10 +458,14 @@ export class SettingsPage extends BasePage {
   }
 
   /**
-   * Go back to vault
+   * Go back to vault (clicks the same settings toggle button, which shows X when in settings)
    */
   async backToVault(): Promise<void> {
-    await this.page.getByRole('button', { name: /back|settings|close/i }).click();
+    // The settings button is in the header - when in settings view it shows X icon
+    const header = this.page.locator('header');
+    const buttons = header.getByRole('button');
+    // Settings/Close is the first button
+    await buttons.first().click();
   }
 }
 
@@ -452,14 +487,18 @@ export class AddPasskeyModal extends BasePage {
    * Fill passkey name
    */
   async fillName(name: string): Promise<void> {
-    await this.page.getByLabel(/name|passkey/i).fill(name);
+    const dialog = this.page.getByRole('dialog');
+    // The input has role="textbox" and label "Passkey Name"
+    await dialog.getByRole('textbox', { name: 'Passkey Name' }).fill(name);
   }
 
   /**
    * Submit the form
    */
   async submit(): Promise<void> {
-    await this.page.getByRole('button', { name: /add|create|save/i }).click();
+    const dialog = this.page.getByRole('dialog');
+    // Submit button in the dialog is "Add Passkey"
+    await dialog.getByRole('button', { name: 'Add Passkey' }).click();
   }
 
   /**

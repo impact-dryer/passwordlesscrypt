@@ -633,6 +633,11 @@ describe('services/vault-service', () => {
       const results = searchVaultItems('GMAIL');
       expect(results).toHaveLength(1);
     });
+
+    it('should be case insensitive - mixed case', () => {
+      const results = searchVaultItems('GmAiL');
+      expect(results).toHaveLength(1);
+    });
   });
 
   describe('resetVault', () => {

@@ -90,6 +90,11 @@ export default ts.config(
   },
   {
     files: ['e2e/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: './e2e/tsconfig.json',
+      },
+    },
     rules: {
       // Relax rules for E2E tests
       '@typescript-eslint/no-explicit-any': 'off',
