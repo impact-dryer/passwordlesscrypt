@@ -1,13 +1,15 @@
 <script lang="ts">
   import { Modal, Input, Button } from '$components';
   import ItemTypeSelector from '../ItemTypeSelector.svelte';
+  import type { VaultItemType } from '$storage';
 
-  type ItemType = 'note' | 'password' | 'secret';
+  /** Non-file item types for text-based items */
+  type TextItemType = 'note' | 'password' | 'secret';
 
   interface Props {
     open: boolean;
     mode: 'add' | 'edit';
-    itemType: ItemType;
+    itemType: TextItemType;
     title: string;
     content: string;
     url: string;
@@ -16,7 +18,7 @@
     onclose: () => void;
     onsubmit: () => void;
     ongeneratepassword: () => void;
-    ontypechange: (type: ItemType) => void;
+    ontypechange: (type: TextItemType) => void;
     ontitlechange: (value: string) => void;
     oncontentchange: (value: string) => void;
     onurlchange: (value: string) => void;
@@ -41,6 +43,13 @@
     onurlchange,
     onusernamechange,
   }: Props = $props();
+
+  function handleTypeChange(type: VaultItemType): void {
+    // Only pass non-file types to parent
+    if (type !== 'file') {
+      ontypechange(type);
+    }
+  }
 
   const modalTitle = $derived(mode === 'add' ? 'Add New Item' : 'Edit Item');
   const modalDescription = $derived(
@@ -71,7 +80,7 @@
 
 <Modal {open} title={modalTitle} description={modalDescription} {onclose}>
   <div class="space-y-4">
-    <ItemTypeSelector selected={itemType} onselect={ontypechange} />
+    <ItemTypeSelector selected={itemType} onselect={handleTypeChange} />
 
     <div>
       <label for="item-title" class="text-text-secondary mb-1.5 block text-sm font-medium">

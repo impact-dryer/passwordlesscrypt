@@ -29,11 +29,18 @@ export const STORAGE_KEYS = {
   CREDENTIALS: 'passkey-credentials',
   WRAPPED_DEKS: 'wrapped-deks',
   VAULT_METADATA: 'vault-metadata',
+  FILE_BLOBS: 'encrypted-files',
 } as const;
 
 // Vault version for migration support
 export const VAULT_VERSION = 1;
 
-
-
-
+// File encryption constants
+export const FILE_CONSTANTS = {
+  /** Maximum file size in bytes (100MB) */
+  MAX_FILE_SIZE: 100 * 1024 * 1024,
+  /** Chunk size for streaming encryption (64KB) */
+  CHUNK_SIZE: 64 * 1024,
+  /** Allowed MIME types for security (empty means all allowed) */
+  ALLOWED_MIME_TYPES: [] as string[],
+} as const;

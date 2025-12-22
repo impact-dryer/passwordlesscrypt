@@ -1,14 +1,17 @@
 <script lang="ts">
-  type ItemType = 'note' | 'password' | 'secret';
+  import type { VaultItemType } from '$storage';
 
   interface Props {
-    selected: ItemType;
-    onselect: (type: ItemType) => void;
+    selected: VaultItemType;
+    onselect: (type: VaultItemType) => void;
+    /** Whether to show the file type option */
+    showFileType?: boolean;
   }
 
-  const { selected, onselect }: Props = $props();
+  const { selected, onselect, showFileType = false }: Props = $props();
 
-  const types: ItemType[] = ['password', 'note', 'secret'];
+  const baseTypes: VaultItemType[] = ['password', 'note', 'secret'];
+  const types: VaultItemType[] = $derived(showFileType ? [...baseTypes, 'file'] : baseTypes);
 
   function capitalize(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
@@ -34,7 +37,3 @@
     {/each}
   </div>
 </fieldset>
-
-
-
-

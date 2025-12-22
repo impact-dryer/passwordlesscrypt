@@ -20,16 +20,21 @@ export interface VaultMetadata {
 }
 
 /**
- * A single vault item (e.g., a secret, note, or password).
+ * Type of vault item.
+ */
+export type VaultItemType = 'note' | 'password' | 'secret' | 'file';
+
+/**
+ * A single vault item (e.g., a secret, note, password, or file).
  */
 export interface VaultItem {
   /** Unique identifier */
   id: string;
   /** Type of item */
-  type: 'note' | 'password' | 'secret';
+  type: VaultItemType;
   /** Item title/name */
   title: string;
-  /** The secret content */
+  /** The secret content (empty string for file items) */
   content: string;
   /** Optional URL for password items */
   url?: string | undefined;
@@ -39,6 +44,14 @@ export interface VaultItem {
   createdAt: number;
   /** When the item was last modified */
   modifiedAt: number;
+  /** Reference to encrypted blob in file storage (file items only) */
+  fileId?: string | undefined;
+  /** Original filename (file items only) */
+  fileName?: string | undefined;
+  /** File size in bytes (file items only) */
+  fileSize?: number | undefined;
+  /** MIME type for preview/download (file items only) */
+  mimeType?: string | undefined;
 }
 
 /**
@@ -64,7 +77,3 @@ export interface StoredVaultData {
   /** Wrapped DEKs for each credential */
   wrappedDEKs: WrappedDEK[];
 }
-
-
-
-

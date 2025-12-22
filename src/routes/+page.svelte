@@ -13,6 +13,7 @@
     ItemFormModal,
     ConfirmDeleteModal,
     AddPasskeyModal,
+    FileUploadModal,
   } from '$components';
   import {
     initializeVault,
@@ -27,6 +28,8 @@
     getVaultItems,
     searchVaultItems,
     generateSecurePassword,
+    addFileItem,
+    downloadFileItem,
     type VaultState,
   } from '$services';
   import { detectCapabilities, getPRFSupportMessage, WebAuthnError } from '$webauthn';
@@ -56,6 +59,7 @@
   let showDeleteItemModal = $state(false);
   let showAddPasskeyModal = $state(false);
   let showDeletePasskeyModal = $state(false);
+  let showFileUploadModal = $state(false);
 
   // Form state
   let setupUserName = $state('');
@@ -286,6 +290,11 @@
   }
 
   function openEditModal(item: VaultItem): void {
+    // Files cannot be edited, only deleted and re-uploaded
+    if (item.type === 'file') {
+      return;
+    }
+
     editingItem = item;
     newItemType = item.type;
     newItemTitle = item.title;
@@ -298,6 +307,43 @@
   function openDeleteModal(item: VaultItem): void {
     deletingItem = item;
     showDeleteItemModal = true;
+  }
+
+  // ============================================================================
+  // File Handlers
+  // ============================================================================
+
+  async function handleFileUpload(file: File, title: string): Promise<void> {
+    isSaving = true;
+    try {
+      await addFileItem(file, title);
+      filteredItems = searchQuery !== '' ? searchVaultItems(searchQuery) : getVaultItems();
+      showFileUploadModal = false;
+      showToast('File uploaded successfully', 'success');
+    } catch (error) {
+      console.error('File upload error:', error);
+      if (error instanceof Error) {
+        showToast(error.message, 'error');
+      } else {
+        showToast('Failed to upload file', 'error');
+      }
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  async function handleFileDownload(item: VaultItem): Promise<void> {
+    try {
+      await downloadFileItem(item.id);
+      showToast('File download started', 'success');
+    } catch (error) {
+      console.error('File download error:', error);
+      if (error instanceof Error) {
+        showToast(error.message, 'error');
+      } else {
+        showToast('Failed to download file', 'error');
+      }
+    }
   }
 
   // ============================================================================
@@ -405,8 +451,12 @@
         onadditem={() => {
           showAddItemModal = true;
         }}
+        onuploadfile={() => {
+          showFileUploadModal = true;
+        }}
         onedititem={openEditModal}
         ondeleteitem={openDeleteModal}
+        ondownloaditem={handleFileDownload}
       />
     {/if}
   {/if}
@@ -549,4 +599,14 @@
     deletingPasskey = null;
   }}
   onconfirm={handleDeletePasskey}
+/>
+
+<!-- File Upload Modal -->
+<FileUploadModal
+  open={showFileUploadModal}
+  isLoading={isSaving}
+  onclose={() => {
+    showFileUploadModal = false;
+  }}
+  onsubmit={handleFileUpload}
 />

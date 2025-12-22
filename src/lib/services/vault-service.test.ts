@@ -102,6 +102,11 @@ vi.mock('$storage', () => {
       return Promise.resolve();
     }),
     validateVaultData: vi.fn((data: unknown) => data),
+    // File storage mocks
+    saveEncryptedFile: vi.fn(() => Promise.resolve()),
+    loadEncryptedFile: vi.fn(() => Promise.resolve(undefined)),
+    deleteEncryptedFile: vi.fn(() => Promise.resolve()),
+    clearAllFiles: vi.fn(() => Promise.resolve()),
   };
 });
 
@@ -651,7 +656,3 @@ describe('services/vault-service', () => {
     });
   });
 });
-
-
-
-

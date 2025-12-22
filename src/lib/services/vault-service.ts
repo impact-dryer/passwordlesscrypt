@@ -17,6 +17,11 @@ import {
   decryptObject,
   createWrappedDEKForCredential,
   VAULT_VERSION,
+  encryptFile,
+  decryptFile,
+  downloadFile,
+  validateFileSize,
+  FILE_CONSTANTS,
 } from '$crypto';
 import { createCredential, authenticateWithAnyCredential, WebAuthnError } from '$webauthn';
 import type { StoredCredential } from '$webauthn';
@@ -38,6 +43,10 @@ import {
   createInitialMetadata,
   clearAllVaultData,
   validateVaultData,
+  saveEncryptedFile,
+  loadEncryptedFile,
+  deleteEncryptedFile,
+  clearAllFiles,
 } from '$storage';
 import type { VaultData, VaultItem, VaultMetadata } from '$storage';
 
@@ -386,17 +395,24 @@ export async function updateVaultItem(
 
 /**
  * Deletes a vault item.
+ * If the item is a file, also deletes the associated encrypted blob.
  */
 export async function deleteVaultItem(id: string): Promise<void> {
   if (!state.isUnlocked || !currentDEK || !state.vault) {
     throw new Error('Vault must be unlocked');
   }
 
-  const itemIndex = state.vault.items.findIndex((item) => item.id === id);
-  if (itemIndex === -1) {
+  const item = state.vault.items.find((i) => i.id === id);
+  if (!item) {
     throw new Error('Item not found');
   }
 
+  // If it's a file item, delete the encrypted blob
+  if (item.type === 'file' && item.fileId !== undefined && item.fileId !== '') {
+    await deleteEncryptedFile(item.fileId);
+  }
+
+  const itemIndex = state.vault.items.indexOf(item);
   state.vault.items.splice(itemIndex, 1);
 
   // Re-encrypt and save
@@ -414,7 +430,7 @@ export function getVaultItems(): VaultItem[] {
 }
 
 /**
- * Searches vault items by title or content.
+ * Searches vault items by title, content, or filename.
  */
 export function searchVaultItems(query: string): VaultItem[] {
   if (!state.vault) {
@@ -433,6 +449,10 @@ export function searchVaultItems(query: string): VaultItem[] {
       return true;
     }
     if (item.username?.toLowerCase().includes(lowerQuery) === true) {
+      return true;
+    }
+    // Search by filename for file items
+    if (item.fileName?.toLowerCase().includes(lowerQuery) === true) {
       return true;
     }
     return false;
@@ -470,9 +490,146 @@ export async function resetVault(): Promise<void> {
     throw new Error('Vault must be unlocked before resetting. This prevents accidental data loss.');
   }
 
-  await clearAllVaultData();
+  // Clear all vault data and encrypted files
+  await Promise.all([clearAllVaultData(), clearAllFiles()]);
   currentDEK = null;
   state = createInitialState();
+}
+
+/**
+ * Adds a file to the vault.
+ *
+ * Domain Rules:
+ * - Vault must be unlocked (DEK must be in memory)
+ * - File size must not exceed maximum (100MB)
+ * - File is encrypted with the vault's DEK
+ * - Encrypted blob stored separately from vault metadata
+ *
+ * @param file - The file to encrypt and store
+ * @param title - Optional title (defaults to filename)
+ * @returns The created vault item with file metadata
+ * @throws Error if vault is not unlocked or file exceeds size limit
+ */
+export async function addFileItem(file: File, title?: string): Promise<VaultItem> {
+  if (!state.isUnlocked || !currentDEK || !state.vault) {
+    throw new Error('Vault must be unlocked to add a file');
+  }
+
+  // Validate file size
+  validateFileSize(file.size);
+
+  // Generate unique file ID
+  const fileId = crypto.randomUUID();
+
+  // Encrypt the file
+  const { encryptedData, metadata } = await encryptFile(currentDEK, file);
+
+  // Store encrypted blob separately
+  await saveEncryptedFile(fileId, encryptedData);
+
+  // Create vault item with file reference
+  const now = Date.now();
+  const newItem: VaultItem = {
+    id: crypto.randomUUID(),
+    type: 'file',
+    title: title !== undefined && title !== '' ? title : file.name,
+    content: '', // No content for file items
+    fileId,
+    fileName: metadata.fileName,
+    fileSize: metadata.originalSize,
+    mimeType: metadata.mimeType,
+    createdAt: now,
+    modifiedAt: now,
+  };
+
+  state.vault.items.push(newItem);
+
+  // Re-encrypt and save vault metadata
+  await saveVaultData();
+
+  return newItem;
+}
+
+/**
+ * Downloads a file item from the vault.
+ *
+ * Domain Rules:
+ * - Vault must be unlocked (DEK must be in memory)
+ * - Item must exist and be a file type
+ * - File is decrypted on-demand
+ *
+ * @param itemId - The vault item ID
+ * @throws Error if vault is not unlocked or item not found
+ */
+export async function downloadFileItem(itemId: string): Promise<void> {
+  if (!state.isUnlocked || !currentDEK || !state.vault) {
+    throw new Error('Vault must be unlocked to download a file');
+  }
+
+  const item = state.vault.items.find((i) => i.id === itemId);
+  if (!item) {
+    throw new Error('Item not found');
+  }
+
+  if (item.type !== 'file' || item.fileId === undefined || item.fileId === '') {
+    throw new Error('Item is not a file');
+  }
+
+  // Load encrypted blob
+  const encryptedData = await loadEncryptedFile(item.fileId);
+  if (!encryptedData) {
+    throw new Error('Encrypted file data not found');
+  }
+
+  // Decrypt the file
+  const decryptedFile = await decryptFile(currentDEK, encryptedData, {
+    fileName: item.fileName ?? 'download',
+    mimeType: item.mimeType ?? 'application/octet-stream',
+  });
+
+  // Trigger download
+  downloadFile(decryptedFile);
+}
+
+/**
+ * Gets a decrypted file for preview (returns File object without triggering download).
+ *
+ * @param itemId - The vault item ID
+ * @returns The decrypted File object
+ * @throws Error if vault is not unlocked or item not found
+ */
+export async function getDecryptedFile(itemId: string): Promise<File> {
+  if (!state.isUnlocked || !currentDEK || !state.vault) {
+    throw new Error('Vault must be unlocked to access a file');
+  }
+
+  const item = state.vault.items.find((i) => i.id === itemId);
+  if (!item) {
+    throw new Error('Item not found');
+  }
+
+  if (item.type !== 'file' || item.fileId === undefined || item.fileId === '') {
+    throw new Error('Item is not a file');
+  }
+
+  // Load encrypted blob
+  const encryptedData = await loadEncryptedFile(item.fileId);
+  if (!encryptedData) {
+    throw new Error('Encrypted file data not found');
+  }
+
+  // Decrypt and return the file
+  return decryptFile(currentDEK, encryptedData, {
+    fileName: item.fileName ?? 'file',
+    mimeType: item.mimeType ?? 'application/octet-stream',
+  });
+}
+
+/**
+ * Gets the maximum allowed file size.
+ */
+export function getMaxFileSize(): number {
+  return FILE_CONSTANTS.MAX_FILE_SIZE;
 }
 
 /**

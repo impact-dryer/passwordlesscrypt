@@ -12,13 +12,18 @@ import { z } from 'zod';
  */
 export const VaultItemSchema = z.object({
   id: z.string().min(1), // Allow any non-empty string ID
-  type: z.enum(['note', 'password', 'secret']),
+  type: z.enum(['note', 'password', 'secret', 'file']),
   title: z.string(), // Allow empty titles
   content: z.string(),
   url: z.string().optional(), // Don't require valid URL format
   username: z.string().optional(),
   createdAt: z.number(),
   modifiedAt: z.number(),
+  // File-specific fields (only for type: 'file')
+  fileId: z.string().optional(),
+  fileName: z.string().optional(),
+  fileSize: z.number().int().min(0).optional(),
+  mimeType: z.string().optional(),
 });
 
 /**
@@ -65,7 +70,3 @@ export function safeValidateVaultData(data: unknown): z.infer<typeof VaultDataSc
 export type ValidatedVaultItem = z.infer<typeof VaultItemSchema>;
 export type ValidatedVaultData = z.infer<typeof VaultDataSchema>;
 export type ValidatedVaultMetadata = z.infer<typeof VaultMetadataSchema>;
-
-
-
-

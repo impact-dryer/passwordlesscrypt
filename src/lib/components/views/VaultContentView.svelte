@@ -7,12 +7,22 @@
     searchQuery: string;
     onsearchchange: (query: string) => void;
     onadditem: () => void;
+    onuploadfile: () => void;
     onedititem: (item: VaultItem) => void;
     ondeleteitem: (item: VaultItem) => void;
+    ondownloaditem: (item: VaultItem) => void;
   }
 
-  const { items, searchQuery, onsearchchange, onadditem, onedititem, ondeleteitem }: Props =
-    $props();
+  const {
+    items,
+    searchQuery,
+    onsearchchange,
+    onadditem,
+    onuploadfile,
+    onedititem,
+    ondeleteitem,
+    ondownloaditem,
+  }: Props = $props();
 
   function handleSearchInput(event: Event): void {
     const target = event.target as HTMLInputElement;
@@ -39,6 +49,10 @@
         class="bg-surface border-border text-text-primary placeholder:text-text-muted focus:ring-primary-500 w-full rounded-lg border py-2.5 pr-4 pl-10 transition-all focus:border-transparent focus:ring-2 focus:outline-none"
       />
     </div>
+    <Button variant="secondary" onclick={onuploadfile}>
+      <Icon name="upload" size={18} />
+      Upload File
+    </Button>
     <Button variant="primary" onclick={onadditem}>
       <Icon name="plus" size={18} />
       Add Item
@@ -76,12 +90,11 @@
           ondelete={() => {
             ondeleteitem(item);
           }}
+          ondownload={() => {
+            ondownloaditem(item);
+          }}
         />
       {/each}
     </div>
   {/if}
 </div>
-
-
-
-

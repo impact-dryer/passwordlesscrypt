@@ -22,8 +22,10 @@ export { LoadingView, SetupView, LockedView, SettingsView, VaultContentView } fr
 export { VaultHeader } from './layout';
 
 // Modal components
-export { SetupModal, ItemFormModal, ConfirmDeleteModal, AddPasskeyModal } from './modals';
-
-
-
-
+export {
+  SetupModal,
+  ItemFormModal,
+  ConfirmDeleteModal,
+  AddPasskeyModal,
+  FileUploadModal,
+} from './modals';

@@ -23,7 +23,10 @@
       | 'external'
       | 'user'
       | 'note'
-      | 'password';
+      | 'password'
+      | 'file'
+      | 'upload'
+      | 'download';
     size?: number;
     class?: string;
   }
@@ -139,9 +142,16 @@
     <circle cx="12" cy="16" r="1" />
     <rect x="3" y="10" width="18" height="12" rx="2" />
     <path d="M7 10V7a5 5 0 0 1 10 0v3" />
+  {:else if iconName === 'file'}
+    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+    <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+  {:else if iconName === 'upload'}
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" x2="12" y1="3" y2="15" />
+  {:else if iconName === 'download'}
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" x2="12" y1="15" y2="3" />
   {/if}
 </svg>
-
-
-
-

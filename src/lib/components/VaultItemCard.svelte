@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { VaultItem } from '$storage';
+  import { formatFileSize } from '$crypto';
   import Icon from './Icon.svelte';
   import Button from './Button.svelte';
   import { showToast } from './toast-utils';
@@ -8,9 +9,10 @@
     item: VaultItem;
     onedit: () => void;
     ondelete: () => void;
+    ondownload?: () => void;
   }
 
-  const { item, onedit, ondelete }: Props = $props();
+  const { item, onedit, ondelete, ondownload }: Props = $props();
 
   let showContent = $state(false);
   let copied = $state(false);
@@ -19,7 +21,10 @@
     note: 'note',
     password: 'password',
     secret: 'key',
+    file: 'file',
   } as const;
+
+  const isFile = $derived(item.type === 'file');
 
   async function copyToClipboard(): Promise<void> {
     try {
@@ -41,6 +46,12 @@
       day: 'numeric',
       year: 'numeric',
     }).format(new Date(timestamp));
+  }
+
+  function handleDownload(): void {
+    if (ondownload) {
+      ondownload();
+    }
   }
 </script>
 
@@ -85,34 +96,58 @@
         </p>
       {/if}
 
-      <!-- Secret content -->
-      <div class="mt-3">
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            class="text-text-muted hover:text-text-secondary flex items-center gap-1 text-xs transition-colors"
-            onclick={() => (showContent = !showContent)}
-          >
-            <Icon name={showContent ? 'eye-off' : 'eye'} size={14} />
-            {showContent ? 'Hide' : 'Show'}
-          </button>
-          <button
-            type="button"
-            class="text-text-muted hover:text-text-secondary flex items-center gap-1 text-xs transition-colors"
-            onclick={copyToClipboard}
-          >
-            <Icon name={copied ? 'check' : 'copy'} size={14} />
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
+      {#if isFile}
+        <!-- File content -->
+        <div class="mt-3">
+          <div class="flex items-center gap-3">
+            {#if item.fileName}
+              <span class="text-text-secondary text-sm">{item.fileName}</span>
+            {/if}
+            {#if item.fileSize !== undefined}
+              <span class="text-text-muted text-xs">({formatFileSize(item.fileSize)})</span>
+            {/if}
+          </div>
+          <div class="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              class="text-primary-400 hover:text-primary-300 flex items-center gap-1 text-sm transition-colors"
+              onclick={handleDownload}
+            >
+              <Icon name="download" size={14} />
+              Download
+            </button>
+          </div>
         </div>
+      {:else}
+        <!-- Secret content -->
+        <div class="mt-3">
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="text-text-muted hover:text-text-secondary flex items-center gap-1 text-xs transition-colors"
+              onclick={() => (showContent = !showContent)}
+            >
+              <Icon name={showContent ? 'eye-off' : 'eye'} size={14} />
+              {showContent ? 'Hide' : 'Show'}
+            </button>
+            <button
+              type="button"
+              class="text-text-muted hover:text-text-secondary flex items-center gap-1 text-xs transition-colors"
+              onclick={copyToClipboard}
+            >
+              <Icon name={copied ? 'check' : 'copy'} size={14} />
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
 
-        {#if showContent}
-          <pre
-            class="bg-background text-text-secondary mt-2 overflow-x-auto rounded-lg p-3 font-mono text-sm">{item.content}</pre>
-        {:else}
-          <p class="text-text-muted mt-2 font-mono text-sm">••••••••••••</p>
-        {/if}
-      </div>
+          {#if showContent}
+            <pre
+              class="bg-background text-text-secondary mt-2 overflow-x-auto rounded-lg p-3 font-mono text-sm">{item.content}</pre>
+          {:else}
+            <p class="text-text-muted mt-2 font-mono text-sm">••••••••••••</p>
+          {/if}
+        </div>
+      {/if}
 
       <!-- Footer -->
       <p class="text-text-muted mt-3 text-xs">
@@ -124,10 +159,12 @@
     <div
       class="flex flex-shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
     >
-      <Button variant="ghost" size="sm" onclick={onedit}>
-        <Icon name="edit" size={16} />
-        <span class="sr-only">Edit item</span>
-      </Button>
+      {#if !isFile}
+        <Button variant="ghost" size="sm" onclick={onedit}>
+          <Icon name="edit" size={16} />
+          <span class="sr-only">Edit item</span>
+        </Button>
+      {/if}
       <Button variant="ghost" size="sm" onclick={ondelete}>
         <Icon name="trash" size={16} class="text-danger-500" />
         <span class="sr-only">Delete item</span>
@@ -135,7 +172,3 @@
     </div>
   </div>
 </div>
-
-
-
-
