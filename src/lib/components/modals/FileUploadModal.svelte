@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Modal, Input, Button, Icon } from '$components';
-  import { formatFileSize, FILE_CONSTANTS } from '$crypto';
+  import { formatFileSizeForDisplay, getMaxFileSize } from '$services';
 
   interface Props {
     open: boolean;
@@ -16,8 +16,8 @@
   let dragActive = $state(false);
   let fileInputRef = $state<HTMLInputElement | null>(null);
 
-  const maxFileSize = FILE_CONSTANTS.MAX_FILE_SIZE;
-  const maxFileSizeFormatted = formatFileSize(maxFileSize);
+  const maxFileSize = getMaxFileSize();
+  const maxFileSizeFormatted = formatFileSizeForDisplay(maxFileSize);
 
   const fileSizeError: string | null = $derived.by(() => {
     if (selectedFile !== null && selectedFile.size > maxFileSize) {
@@ -136,7 +136,7 @@
             <Icon name="file" size={24} class="text-primary-400" />
           </div>
           <div class="text-text-primary font-medium">{selectedFile.name}</div>
-          <div class="text-text-muted text-sm">{formatFileSize(selectedFile.size)}</div>
+          <div class="text-text-muted text-sm">{formatFileSizeForDisplay(selectedFile.size)}</div>
           {#if fileSizeError}
             <div class="text-error-400 text-sm">{fileSizeError}</div>
           {/if}

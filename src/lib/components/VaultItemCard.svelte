@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { VaultItem } from '$storage';
-  import { formatFileSize } from '$crypto';
+  import { formatFileSizeForDisplay } from '$services';
   import Icon from './Icon.svelte';
   import Button from './Button.svelte';
   import { showToast } from './toast-utils';
@@ -104,7 +104,9 @@
               <span class="text-text-secondary text-sm">{item.fileName}</span>
             {/if}
             {#if item.fileSize !== undefined}
-              <span class="text-text-muted text-xs">({formatFileSize(item.fileSize)})</span>
+              <span class="text-text-muted text-xs"
+                >({formatFileSizeForDisplay(item.fileSize)})</span
+              >
             {/if}
           </div>
           <div class="mt-2 flex items-center gap-2">

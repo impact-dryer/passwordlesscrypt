@@ -1,12 +1,26 @@
 /**
- * Vault Service - Orchestrates encryption, WebAuthn, and storage.
+ * Vault Service - Domain Aggregate Root
  *
- * This is the main service that provides the high-level API for:
+ * This is the main aggregate root that orchestrates encryption, WebAuthn, and storage.
+ * It provides the high-level API for:
  * - Creating and unlocking vaults
  * - Adding/removing passkeys
- * - Managing vault items (secrets, notes, passwords)
+ * - Managing vault items (secrets, notes, passwords, files)
  *
- * Follows the Envelope Encryption pattern from NIST SP 800-57.
+ * **Domain-Driven Design:**
+ * - This is the Vault Aggregate Root
+ * - All vault operations MUST go through this service
+ * - Maintains aggregate invariants (see docs/EVENT_STORMING.md)
+ * - Commands are named in imperative form
+ * - Domain events are implicit (see docs/EVENT_STORMING.md for event list)
+ *
+ * **Architecture:**
+ * - Follows the Envelope Encryption pattern from NIST SP 800-57
+ * - Uses bounded contexts: Crypto, WebAuthn, Storage
+ * - UI components should ONLY interact with this service
+ *
+ * @see docs/EVENT_STORMING.md - Complete domain model with events and commands
+ * @see docs/ARCHITECTURE.md - Technical architecture and DDD patterns
  */
 
 import {
@@ -22,6 +36,7 @@ import {
   downloadFile,
   validateFileSize,
   FILE_CONSTANTS,
+  formatFileSize,
 } from '$crypto';
 import { createCredential, authenticateWithAnyCredential, WebAuthnError } from '$webauthn';
 import type { StoredCredential } from '$webauthn';
@@ -121,9 +136,25 @@ export async function initializeVault(): Promise<VaultState> {
 /**
  * Sets up a new vault with the first passkey.
  *
+ * **Domain Command:** `setupVault`
+ *
+ * **Domain Events (implicit):**
+ * - VaultCreated
+ * - PasskeyCreated
+ * - KEKDerived
+ * - DEKGenerated
+ * - DEKWrapped
+ * - VaultEncrypted
+ *
+ * **Invariants:**
+ * - Creates a new vault with exactly one passkey
+ * - DEK is wrapped with the first passkey's KEK
+ * - Vault starts in unlocked state
+ *
  * @param userName - Display name for the user
  * @param passkeyName - User-friendly name for the first passkey
  * @returns The initial vault state
+ * @throws WebAuthnError if PRF is not enabled
  */
 export async function setupVault(userName: string, passkeyName: string): Promise<VaultState> {
   // Create the passkey and get PRF output
@@ -184,7 +215,21 @@ export async function setupVault(userName: string, passkeyName: string): Promise
 /**
  * Unlocks the vault with any available passkey.
  *
+ * **Domain Command:** `unlockVault`
+ *
+ * **Domain Events (implicit):**
+ * - PasskeyAuthenticationSucceeded
+ * - KEKDerived
+ * - DEKUnwrapped
+ * - VaultDecrypted
+ * - VaultUnlocked
+ *
+ * **Prerequisites:**
+ * - Vault must exist (at least one passkey registered)
+ *
  * @returns The unlocked vault data
+ * @throws WebAuthnError if no credentials exist or authentication fails
+ * @throws Error if wrapped DEK or encrypted vault not found
  */
 export async function unlockVault(): Promise<UnlockResult> {
   const credentials = await loadCredentials();
@@ -255,6 +300,14 @@ export async function unlockVault(): Promise<UnlockResult> {
 /**
  * Locks the vault, clearing sensitive data from memory.
  *
+ * **Domain Command:** `lockVault`
+ *
+ * **Domain Events (implicit):**
+ * - VaultLocked
+ *
+ * **State Transition:**
+ * - Unlocked → Locked
+ *
  * Note: Setting references to null doesn't guarantee memory is cleared
  * in JavaScript due to garbage collection. This is a known limitation
  * of browser-based cryptography. The actual key material in CryptoKey
@@ -273,8 +326,25 @@ export function lockVault(): void {
 /**
  * Adds a new passkey to an existing vault.
  *
+ * **Domain Command:** `addPasskey`
+ *
+ * **Domain Events (implicit):**
+ * - PasskeyCreated
+ * - KEKDerived
+ * - DEKWrapped
+ *
+ * **Prerequisites:**
+ * - Vault must be unlocked (DEK must be in memory)
+ * - New passkey must support PRF extension
+ *
+ * **Invariants:**
+ * - DEK is wrapped with new passkey's KEK
+ * - New passkey is added to credentials list
+ *
  * @param passkeyName - User-friendly name for the new passkey
  * @returns The updated credentials list
+ * @throws Error if vault is not unlocked
+ * @throws WebAuthnError if PRF is not enabled
  */
 export async function addPasskey(passkeyName: string): Promise<StoredCredential[]> {
   if (!state.isUnlocked || !currentDEK) {
@@ -310,9 +380,24 @@ export async function addPasskey(passkeyName: string): Promise<StoredCredential[
 
 /**
  * Removes a passkey from the vault.
- * Cannot remove the last passkey.
+ *
+ * **Domain Command:** `removePasskey`
+ *
+ * **Domain Events (implicit):**
+ * - PasskeyRemoved
+ * - WrappedDEKRemoved
+ *
+ * **Prerequisites:**
+ * - Vault must be unlocked
+ * - At least 2 passkeys must exist (invariant: cannot remove last passkey)
+ *
+ * **Invariants:**
+ * - At least one passkey must always exist
+ * - Wrapped DEK for removed passkey is deleted
  *
  * @param credentialId - The credential ID to remove
+ * @returns The updated credentials list
+ * @throws Error if vault is not unlocked, only one passkey exists, or passkey not found
  */
 export async function removePasskey(credentialId: string): Promise<StoredCredential[]> {
   const credentials = await loadCredentials();
@@ -337,6 +422,19 @@ export async function removePasskey(credentialId: string): Promise<StoredCredent
 
 /**
  * Adds a new item to the vault.
+ *
+ * **Domain Command:** `addVaultItem`
+ *
+ * **Domain Events (implicit):**
+ * - VaultItemAdded
+ * - VaultEncrypted
+ *
+ * **Prerequisites:**
+ * - Vault must be unlocked
+ *
+ * @param item - The item to add (without id, createdAt, modifiedAt)
+ * @returns The created vault item with generated ID and timestamps
+ * @throws Error if vault is not unlocked
  */
 export async function addVaultItem(
   item: Omit<VaultItem, 'id' | 'createdAt' | 'modifiedAt'>
@@ -363,6 +461,21 @@ export async function addVaultItem(
 
 /**
  * Updates an existing vault item.
+ *
+ * **Domain Command:** `updateVaultItem`
+ *
+ * **Domain Events (implicit):**
+ * - VaultItemUpdated
+ * - VaultEncrypted
+ *
+ * **Prerequisites:**
+ * - Vault must be unlocked
+ * - Item must exist
+ *
+ * @param id - The item ID to update
+ * @param updates - Partial item data to update
+ * @returns The updated vault item
+ * @throws Error if vault is not unlocked or item not found
  */
 export async function updateVaultItem(
   id: string,
@@ -395,7 +508,23 @@ export async function updateVaultItem(
 
 /**
  * Deletes a vault item.
- * If the item is a file, also deletes the associated encrypted blob.
+ *
+ * **Domain Command:** `deleteVaultItem`
+ *
+ * **Domain Events (implicit):**
+ * - VaultItemDeleted
+ * - VaultEncrypted
+ * - FileDeleted (if item is a file)
+ *
+ * **Prerequisites:**
+ * - Vault must be unlocked
+ * - Item must exist
+ *
+ * **Behavior:**
+ * - If item is a file, also deletes the associated encrypted blob
+ *
+ * @param id - The item ID to delete
+ * @throws Error if vault is not unlocked or item not found
  */
 export async function deleteVaultItem(id: string): Promise<void> {
   if (!state.isUnlocked || !currentDEK || !state.vault) {
@@ -483,7 +612,20 @@ async function saveVaultData(): Promise<void> {
 
 /**
  * Completely resets the vault (deletes everything).
- * Requires unlocking first for safety to prevent accidental data loss.
+ *
+ * **Domain Command:** `resetVault`
+ *
+ * **Domain Events (implicit):**
+ * - VaultReset
+ *
+ * **Prerequisites:**
+ * - Vault must be unlocked (safety check to prevent accidental data loss)
+ *
+ * **Behavior:**
+ * - Deletes all vault data, credentials, wrapped DEKs, and encrypted files
+ * - Resets state to initial (not setup)
+ *
+ * @throws Error if vault is not unlocked
  */
 export async function resetVault(): Promise<void> {
   if (!state.isUnlocked) {
@@ -499,7 +641,15 @@ export async function resetVault(): Promise<void> {
 /**
  * Adds a file to the vault.
  *
- * Domain Rules:
+ * **Domain Command:** `addFileItem`
+ *
+ * **Domain Events (implicit):**
+ * - FileItemAdded
+ * - FileEncrypted
+ * - VaultItemAdded
+ * - VaultEncrypted
+ *
+ * **Domain Rules:**
  * - Vault must be unlocked (DEK must be in memory)
  * - File size must not exceed maximum (100MB)
  * - File is encrypted with the vault's DEK
@@ -553,13 +703,19 @@ export async function addFileItem(file: File, title?: string): Promise<VaultItem
 /**
  * Downloads a file item from the vault.
  *
- * Domain Rules:
+ * **Domain Command:** `downloadFileItem`
+ *
+ * **Domain Events (implicit):**
+ * - FileDecrypted
+ * - FileDownloaded
+ *
+ * **Domain Rules:**
  * - Vault must be unlocked (DEK must be in memory)
  * - Item must exist and be a file type
  * - File is decrypted on-demand
  *
  * @param itemId - The vault item ID
- * @throws Error if vault is not unlocked or item not found
+ * @throws Error if vault is not unlocked, item not found, or item is not a file
  */
 export async function downloadFileItem(itemId: string): Promise<void> {
   if (!state.isUnlocked || !currentDEK || !state.vault) {
@@ -630,6 +786,18 @@ export async function getDecryptedFile(itemId: string): Promise<File> {
  */
 export function getMaxFileSize(): number {
   return FILE_CONSTANTS.MAX_FILE_SIZE;
+}
+
+/**
+ * Formats a file size in bytes to a human-readable string.
+ * This is a utility function exposed through the service layer to maintain
+ * DDD boundaries - components should not directly access crypto utilities.
+ *
+ * @param bytes - File size in bytes
+ * @returns Formatted string (e.g., "1.5 MB")
+ */
+export function formatFileSizeForDisplay(bytes: number): string {
+  return formatFileSize(bytes);
 }
 
 /**
