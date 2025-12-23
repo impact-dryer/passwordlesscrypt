@@ -96,8 +96,7 @@ export function createVaultPageStore() {
 
   function updateFilteredItems(): void {
     if (vaultState?.isUnlocked === true) {
-      filteredItems =
-        searchQuery.trim() !== '' ? searchVaultItems(searchQuery) : getVaultItems();
+      filteredItems = searchQuery.trim() !== '' ? searchVaultItems(searchQuery) : getVaultItems();
     }
   }
 
@@ -492,4 +491,3 @@ export function createVaultPageStore() {
 }
 
 export type VaultPageStore = ReturnType<typeof createVaultPageStore>;
-

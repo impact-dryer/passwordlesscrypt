@@ -42,4 +42,3 @@ export function createSetupFormState() {
 }
 
 export type SetupFormState = ReturnType<typeof createSetupFormState>;
-

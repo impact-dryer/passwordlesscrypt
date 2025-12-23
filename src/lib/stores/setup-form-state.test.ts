@@ -78,4 +78,3 @@ describe('stores/setup-form-state', () => {
     });
   });
 });
-

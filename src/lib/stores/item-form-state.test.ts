@@ -207,4 +207,3 @@ describe('stores/item-form-state', () => {
     });
   });
 });
-

@@ -40,4 +40,3 @@ export function createModalState() {
 }
 
 export type ModalState = ReturnType<typeof createModalState>;
-
