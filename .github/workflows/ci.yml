@@ -2,6 +2,8 @@
 # Runs on all pushes and pull requests to ensure code quality and correctness
 
 name: CI
+permissions:
+  contents: read
 
 on:
   push:
