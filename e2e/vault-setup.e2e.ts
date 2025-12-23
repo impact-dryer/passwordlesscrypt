@@ -85,4 +85,3 @@ test.describe('Vault Setup', () => {
     expect(hasContent).toBe(true);
   });
 });
-

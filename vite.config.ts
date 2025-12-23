@@ -57,7 +57,14 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'tests/', '**/*.d.ts', '**/*.config.*', '**/types.ts'],
+      exclude: [
+        'node_modules/',
+        'tests/',
+        '**/*.d.ts',
+        '**/*.config.*',
+        '**/types.ts',
+        '**/index.ts', // Barrel files (re-exports only)
+      ],
       thresholds: {
         statements: 80,
         branches: 80,

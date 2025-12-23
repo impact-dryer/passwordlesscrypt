@@ -553,10 +553,3 @@ describe('webauthn/prf', () => {
     });
   });
 });
-
-
-
-
-
-
-

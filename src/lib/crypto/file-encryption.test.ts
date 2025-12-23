@@ -2,7 +2,7 @@
  * Tests for file encryption utilities.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   validateFileSize,
   formatFileSize,
@@ -11,6 +11,8 @@ import {
   encryptFile,
   decryptFile,
   readFileAsArrayBuffer,
+  createFileDownloadUrl,
+  downloadFile,
 } from './file-encryption';
 import { FILE_CONSTANTS } from './constants';
 import { generateDEK } from './envelope';
@@ -171,5 +173,68 @@ describe('encryptFile and decryptFile', () => {
     const { metadata } = await encryptFile(dek, file);
 
     expect(metadata.mimeType).toBe('application/octet-stream');
+  });
+});
+
+describe('createFileDownloadUrl', () => {
+  it('should create a blob URL for a file', () => {
+    const file = new File(['test content'], 'test.txt', { type: 'text/plain' });
+    const url = createFileDownloadUrl(file);
+
+    expect(url).toMatch(/^blob:/);
+
+    // Clean up
+    URL.revokeObjectURL(url);
+  });
+});
+
+describe('downloadFile', () => {
+  it('should create and click a download link', () => {
+    const file = new File(['test content'], 'download.txt', { type: 'text/plain' });
+
+    // Track if an anchor was appended and clicked
+    let clickCalled = false;
+    let linkAppended = false;
+    let linkRemoved = false;
+    let urlRevoked = false;
+
+    // Store original methods
+    const originalAppendChild = document.body.appendChild.bind(document.body);
+    const originalRemoveChild = document.body.removeChild.bind(document.body);
+
+    // Spy on DOM operations
+    const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => {
+      if (node instanceof HTMLAnchorElement) {
+        linkAppended = true;
+        // Mock the click
+        node.click = () => {
+          clickCalled = true;
+        };
+      }
+      return originalAppendChild(node);
+    });
+
+    const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation((node) => {
+      if (node instanceof HTMLAnchorElement) {
+        linkRemoved = true;
+      }
+      return originalRemoveChild(node);
+    });
+
+    const revokeURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {
+      urlRevoked = true;
+    });
+
+    downloadFile(file);
+
+    expect(linkAppended).toBe(true);
+    expect(clickCalled).toBe(true);
+    expect(linkRemoved).toBe(true);
+    expect(urlRevoked).toBe(true);
+
+    // Restore spies
+    appendChildSpy.mockRestore();
+    removeChildSpy.mockRestore();
+    revokeURLSpy.mockRestore();
   });
 });

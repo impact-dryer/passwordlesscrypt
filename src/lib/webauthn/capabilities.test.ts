@@ -403,10 +403,3 @@ describe('webauthn/capabilities', () => {
     });
   });
 });
-
-
-
-
-
-
-

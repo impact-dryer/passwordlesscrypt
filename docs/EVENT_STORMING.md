@@ -439,4 +439,3 @@ If the application grows to need:
 - Analytics/telemetry
 
 Then an explicit event system should be implemented.
-

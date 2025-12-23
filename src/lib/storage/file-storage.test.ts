@@ -129,6 +129,31 @@ describe('file-storage', () => {
       const usage = await getFileStorageUsage();
       expect(usage).toBe(8);
     });
+
+    it('should handle missing file data gracefully', async () => {
+      // Save files first
+      await saveEncryptedFile('file-1', new Uint8Array([1, 2, 3]));
+      await saveEncryptedFile('file-2', new Uint8Array([4, 5]));
+
+      // Get reference to the mock store
+      const idbModule = (await import('idb-keyval')) as {
+        __store?: Map<string, unknown>;
+      };
+      const store = idbModule.__store;
+
+      // Set file-2's data to undefined (simulating corruption/race)
+      // The key still exists but the value is undefined
+      if (store !== undefined) {
+        const file2Key = Array.from(store.keys()).find((k) => k.includes('file-2'));
+        if (file2Key !== undefined && file2Key !== '') {
+          store.set(file2Key, undefined);
+        }
+      }
+
+      const usage = await getFileStorageUsage();
+      // Only file-1 should be counted (3 bytes)
+      expect(usage).toBe(3);
+    });
   });
 
   describe('clearAllFiles', () => {

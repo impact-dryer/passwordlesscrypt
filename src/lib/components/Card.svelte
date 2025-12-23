@@ -30,10 +30,3 @@
 <div class="{baseStyles} {variantStyles[variant]} {paddingStyles[padding]} {className}">
   {@render children()}
 </div>
-
-
-
-
-
-
-

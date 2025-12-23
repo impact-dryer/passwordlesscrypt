@@ -14,6 +14,11 @@ import {
   updateVaultItem,
   deleteVaultItem,
   resetVault,
+  addFileItem,
+  downloadFileItem,
+  getDecryptedFile,
+  getMaxFileSize,
+  formatFileSizeForDisplay,
 } from './vault-service';
 
 // Mutable storage state
@@ -174,6 +179,36 @@ vi.mock('$crypto', () => {
         })
     ),
     VAULT_VERSION: 1,
+    // File-related exports
+    FILE_CONSTANTS: {
+      MAX_FILE_SIZE: 100 * 1024 * 1024,
+    },
+    validateFileSize: vi.fn(),
+    encryptFile: vi.fn((_dek: CryptoKey, file: File) =>
+      Promise.resolve({
+        encryptedData: new Uint8Array([1, 2, 3]),
+        metadata: {
+          fileName: file.name,
+          mimeType: file.type !== '' ? file.type : 'application/octet-stream',
+          originalSize: file.size,
+          version: 1,
+        },
+      })
+    ),
+    decryptFile: vi.fn(() => Promise.resolve(new File(['test'], 'test.txt'))),
+    downloadFile: vi.fn(),
+    formatFileSize: vi.fn((bytes: number) => {
+      if (bytes === 0) {
+        return '0 B';
+      }
+      if (bytes < 1024) {
+        return String(bytes) + ' B';
+      }
+      if (bytes < 1024 * 1024) {
+        return (bytes / 1024).toFixed(1) + ' KB';
+      }
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }),
   };
 });
 
@@ -658,6 +693,140 @@ describe('services/vault-service', () => {
       lockVault();
 
       await expect(resetVault()).rejects.toThrow('Vault must be unlocked before resetting');
+    });
+  });
+
+  describe('file operations', () => {
+    beforeEach(async () => {
+      await setupVault('User', 'Key');
+    });
+
+    describe('addFileItem', () => {
+      it('should throw when vault is locked', async () => {
+        lockVault();
+        const file = new File(['content'], 'test.txt', { type: 'text/plain' });
+        await expect(addFileItem(file)).rejects.toThrow('Vault must be unlocked to add a file');
+      });
+
+      it('should add a file item to the vault', async () => {
+        const file = new File(['test content'], 'document.txt', { type: 'text/plain' });
+        const item = await addFileItem(file);
+
+        expect(item.id).toBeDefined();
+        expect(item.type).toBe('file');
+        expect(item.title).toBe('document.txt');
+        expect(item.fileName).toBe('document.txt');
+        expect(item.fileSize).toBe(12);
+        expect(item.mimeType).toBe('text/plain');
+        expect(item.fileId).toBeDefined();
+      });
+
+      it('should use custom title if provided', async () => {
+        const file = new File(['test'], 'original.txt', { type: 'text/plain' });
+        const item = await addFileItem(file, 'Custom Title');
+
+        expect(item.title).toBe('Custom Title');
+        expect(item.fileName).toBe('original.txt');
+      });
+
+      it('should use filename as title if custom title is empty', async () => {
+        const file = new File(['test'], 'myfile.pdf', { type: 'application/pdf' });
+        const item = await addFileItem(file, '');
+
+        expect(item.title).toBe('myfile.pdf');
+      });
+    });
+
+    describe('downloadFileItem', () => {
+      it('should throw when vault is locked', async () => {
+        lockVault();
+        await expect(downloadFileItem('some-id')).rejects.toThrow(
+          'Vault must be unlocked to download a file'
+        );
+      });
+
+      it('should throw when item not found', async () => {
+        await expect(downloadFileItem('non-existent')).rejects.toThrow('Item not found');
+      });
+
+      it('should throw when item is not a file', async () => {
+        const item = await addVaultItem({ type: 'note', title: 'Note', content: 'text' });
+        await expect(downloadFileItem(item.id)).rejects.toThrow('Item is not a file');
+      });
+
+      it('should throw when encrypted file data not found', async () => {
+        const file = new File(['test'], 'test.txt', { type: 'text/plain' });
+        const item = await addFileItem(file);
+
+        // loadEncryptedFile returns undefined by default in our mock
+        await expect(downloadFileItem(item.id)).rejects.toThrow('Encrypted file data not found');
+      });
+    });
+
+    describe('getDecryptedFile', () => {
+      it('should throw when vault is locked', async () => {
+        lockVault();
+        await expect(getDecryptedFile('some-id')).rejects.toThrow(
+          'Vault must be unlocked to access a file'
+        );
+      });
+
+      it('should throw when item not found', async () => {
+        await expect(getDecryptedFile('non-existent')).rejects.toThrow('Item not found');
+      });
+
+      it('should throw when item is not a file', async () => {
+        const item = await addVaultItem({ type: 'password', title: 'Pass', content: 'secret' });
+        await expect(getDecryptedFile(item.id)).rejects.toThrow('Item is not a file');
+      });
+
+      it('should throw when encrypted file data not found', async () => {
+        const file = new File(['test'], 'test.txt', { type: 'text/plain' });
+        const item = await addFileItem(file);
+
+        await expect(getDecryptedFile(item.id)).rejects.toThrow('Encrypted file data not found');
+      });
+    });
+
+    describe('getMaxFileSize', () => {
+      it('should return the maximum file size constant', () => {
+        const maxSize = getMaxFileSize();
+        expect(maxSize).toBe(100 * 1024 * 1024); // 100MB
+      });
+    });
+
+    describe('formatFileSizeForDisplay', () => {
+      it('should format bytes correctly', () => {
+        expect(formatFileSizeForDisplay(0)).toBe('0 B');
+        expect(formatFileSizeForDisplay(500)).toBe('500 B');
+        expect(formatFileSizeForDisplay(1024)).toBe('1.0 KB');
+        expect(formatFileSizeForDisplay(1024 * 1024)).toBe('1.0 MB');
+      });
+    });
+  });
+
+  describe('searchVaultItems with file items', () => {
+    beforeEach(async () => {
+      await setupVault('User', 'Key');
+    });
+
+    it('should search by fileName', async () => {
+      // Add a file item with a specific fileName
+      const file = new File(['content'], 'important-document.pdf', { type: 'application/pdf' });
+      await addFileItem(file);
+      await addVaultItem({ type: 'note', title: 'Other Item', content: 'nothing' });
+
+      const results = searchVaultItems('document');
+      expect(results).toHaveLength(1);
+      expect(results[0]?.fileName).toBe('important-document.pdf');
+    });
+
+    it('should find file items by fileName case-insensitively', async () => {
+      const file = new File(['content'], 'MyReport.xlsx', { type: 'application/vnd.ms-excel' });
+      await addFileItem(file, 'Custom Title');
+
+      const results = searchVaultItems('MYREPORT');
+      expect(results).toHaveLength(1);
     });
   });
 });

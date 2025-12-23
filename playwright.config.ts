@@ -84,4 +84,3 @@ export default defineConfig({
   // Output folder for test artifacts
   outputDir: 'e2e-results',
 });
-

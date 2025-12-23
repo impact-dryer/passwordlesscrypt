@@ -163,10 +163,3 @@ jobs:
           if [[ "${{ needs.deploy-pages.result }}" == "success" ]]; then
             echo "**Deployed to:** GitHub Pages" >> $GITHUB_STEP_SUMMARY
           fi
-
-
-
-
-
-
-

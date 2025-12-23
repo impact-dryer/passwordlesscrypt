@@ -12,10 +12,3 @@
     <p class="text-text-secondary">Loading...</p>
   </div>
 </div>
-
-
-
-
-
-
-

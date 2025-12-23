@@ -107,10 +107,3 @@ export class WebAuthnError extends Error {
     this.name = 'WebAuthnError';
   }
 }
-
-
-
-
-
-
-

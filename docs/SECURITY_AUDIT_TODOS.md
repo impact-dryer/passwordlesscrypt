@@ -49,7 +49,7 @@ function resetLockTimer(): void {
 
 ## High Priority
 
-### [ ] SEC-002: Use Non-Empty Salt in HKDF
+### [ x ] SEC-002: Use Non-Empty Salt in HKDF
 
 **File:** `src/lib/crypto/kdf.ts:49`  
 **Severity:** High  
