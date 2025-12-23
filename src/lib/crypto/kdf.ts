@@ -37,7 +37,8 @@ export async function importMasterKey(ikm: Uint8Array): Promise<CryptoKey> {
 export async function deriveAesKey(
   masterKey: CryptoKey,
   info: string,
-  usage: 'encrypt-decrypt' | 'wrap-unwrap'
+  usage: 'encrypt-decrypt' | 'wrap-unwrap',
+  salt: string
 ): Promise<CryptoKey> {
   const keyUsages: KeyUsage[] =
     usage === 'encrypt-decrypt' ? ['encrypt', 'decrypt'] : ['wrapKey', 'unwrapKey'];
@@ -46,7 +47,7 @@ export async function deriveAesKey(
   return crypto.subtle.deriveKey(
     {
       name: 'HKDF',
-      salt: new Uint8Array().buffer, // Empty salt is fine when IKM has high entropy (PRF output does)
+      salt: stringToBytes(salt).buffer as ArrayBuffer,
       hash: 'SHA-256',
       info: infoBytes.buffer as ArrayBuffer,
     },
@@ -64,9 +65,9 @@ export async function deriveAesKey(
  * @param prfOutput - The raw PRF output from WebAuthn
  * @returns A CryptoKey for wrapping/unwrapping the DEK
  */
-export async function deriveKEK(prfOutput: Uint8Array): Promise<CryptoKey> {
+export async function deriveKEK(prfOutput: Uint8Array, salt: string): Promise<CryptoKey> {
   const masterKey = await importMasterKey(prfOutput);
-  return deriveAesKey(masterKey, HKDF_INFO.KEK, 'wrap-unwrap');
+  return deriveAesKey(masterKey, HKDF_INFO.KEK, 'wrap-unwrap', salt);
 }
 
 /**
@@ -76,13 +77,7 @@ export async function deriveKEK(prfOutput: Uint8Array): Promise<CryptoKey> {
  * @param prfOutput - The raw PRF output from WebAuthn
  * @returns A CryptoKey for encrypting/decrypting data
  */
-export async function deriveEncryptionKey(prfOutput: Uint8Array): Promise<CryptoKey> {
+export async function deriveEncryptionKey(prfOutput: Uint8Array, salt: string): Promise<CryptoKey> {
   const masterKey = await importMasterKey(prfOutput);
-  return deriveAesKey(masterKey, HKDF_INFO.DEK, 'encrypt-decrypt');
+  return deriveAesKey(masterKey, HKDF_INFO.DEK, 'encrypt-decrypt', salt);
 }
-
-
-
-
-
-

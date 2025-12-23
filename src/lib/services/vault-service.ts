@@ -164,8 +164,8 @@ export async function setupVault(userName: string, passkeyName: string): Promise
     throw new WebAuthnError('prf-not-enabled', 'PRF output not available');
   }
 
-  // Derive KEK from PRF output
-  const kek = await deriveKEK(prfOutput);
+  // Derive KEK from PRF output using the credential's PRF salt
+  const kek = await deriveKEK(prfOutput, credential.prfSalt);
 
   // Generate a new DEK for the vault
   const dek = await generateDEK();
@@ -252,8 +252,8 @@ export async function unlockVault(): Promise<UnlockResult> {
     throw new Error('Wrapped DEK not found for credential');
   }
 
-  // Derive KEK and unwrap DEK
-  const kek = await deriveKEK(authResult.prfOutput);
+  // Derive KEK and unwrap DEK using the stored PRF salt
+  const kek = await deriveKEK(authResult.prfOutput, wrappedDEK.prfSalt);
   const dek = await unwrapDEK(wrappedDEK.wrappedKey, kek);
   currentDEK = dek;
 
@@ -358,8 +358,8 @@ export async function addPasskey(passkeyName: string): Promise<StoredCredential[
     throw new WebAuthnError('prf-not-enabled', 'PRF output not available');
   }
 
-  // Derive KEK and wrap the existing DEK
-  const kek = await deriveKEK(prfOutput);
+  // Derive KEK and wrap the existing DEK using the credential's PRF salt
+  const kek = await deriveKEK(prfOutput, credential.prfSalt);
   const wrappedDEK = await createWrappedDEKForCredential(
     currentDEK,
     kek,

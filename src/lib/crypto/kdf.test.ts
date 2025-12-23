@@ -36,7 +36,7 @@ describe('crypto/kdf', () => {
   describe('deriveAesKey', () => {
     it('should derive AES-GCM key for encryption', async () => {
       const masterKey = await importMasterKey(samplePRFOutput);
-      const aesKey = await deriveAesKey(masterKey, 'test-info', 'encrypt-decrypt');
+      const aesKey = await deriveAesKey(masterKey, 'test-info', 'encrypt-decrypt', 'test-salt');
 
       expect(aesKey).toBeInstanceOf(CryptoKey);
       expect(aesKey.algorithm.name).toBe('AES-GCM');
@@ -47,7 +47,7 @@ describe('crypto/kdf', () => {
 
     it('should derive AES-GCM key for wrapping', async () => {
       const masterKey = await importMasterKey(samplePRFOutput);
-      const aesKey = await deriveAesKey(masterKey, 'test-info', 'wrap-unwrap');
+      const aesKey = await deriveAesKey(masterKey, 'test-info', 'wrap-unwrap', 'test-salt');
 
       expect(aesKey).toBeInstanceOf(CryptoKey);
       expect(aesKey.usages).toContain('wrapKey');
@@ -57,8 +57,8 @@ describe('crypto/kdf', () => {
     it('should derive different keys for different info strings', async () => {
       const masterKey = await importMasterKey(samplePRFOutput);
 
-      const key1 = await deriveAesKey(masterKey, 'info-1', 'encrypt-decrypt');
-      const key2 = await deriveAesKey(masterKey, 'info-2', 'encrypt-decrypt');
+      const key1 = await deriveAesKey(masterKey, 'info-1', 'encrypt-decrypt', 'test-salt');
+      const key2 = await deriveAesKey(masterKey, 'info-2', 'encrypt-decrypt', 'test-salt');
 
       // Export both keys to compare (we need to create extractable keys for this test)
       // Since our keys are non-extractable, we test by encrypting the same data
@@ -74,7 +74,7 @@ describe('crypto/kdf', () => {
 
     it('should create non-extractable keys', async () => {
       const masterKey = await importMasterKey(samplePRFOutput);
-      const aesKey = await deriveAesKey(masterKey, 'test', 'encrypt-decrypt');
+      const aesKey = await deriveAesKey(masterKey, 'test', 'encrypt-decrypt', 'test-salt');
 
       expect(aesKey.extractable).toBe(false);
     });
@@ -82,7 +82,7 @@ describe('crypto/kdf', () => {
 
   describe('deriveKEK', () => {
     it('should derive KEK from PRF output', async () => {
-      const kek = await deriveKEK(samplePRFOutput);
+      const kek = await deriveKEK(samplePRFOutput, 'test-salt');
 
       expect(kek).toBeInstanceOf(CryptoKey);
       expect(kek.algorithm.name).toBe('AES-GCM');
@@ -91,8 +91,8 @@ describe('crypto/kdf', () => {
     });
 
     it('should derive same KEK from same input', async () => {
-      const kek1 = await deriveKEK(samplePRFOutput);
-      const kek2 = await deriveKEK(samplePRFOutput);
+      const kek1 = await deriveKEK(samplePRFOutput, 'test-salt');
+      const kek2 = await deriveKEK(samplePRFOutput, 'test-salt');
 
       // Test by wrapping the same key
       const testKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, [
@@ -116,8 +116,8 @@ describe('crypto/kdf', () => {
       const input1 = new Uint8Array(32).fill(0x11);
       const input2 = new Uint8Array(32).fill(0x22);
 
-      const kek1 = await deriveKEK(input1);
-      const kek2 = await deriveKEK(input2);
+      const kek1 = await deriveKEK(input1, 'test-salt');
+      const kek2 = await deriveKEK(input2, 'test-salt');
 
       const testKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, [
         'encrypt',
@@ -139,7 +139,7 @@ describe('crypto/kdf', () => {
 
   describe('deriveEncryptionKey', () => {
     it('should derive encryption key from PRF output', async () => {
-      const key = await deriveEncryptionKey(samplePRFOutput);
+      const key = await deriveEncryptionKey(samplePRFOutput, 'test-salt');
 
       expect(key).toBeInstanceOf(CryptoKey);
       expect(key.algorithm.name).toBe('AES-GCM');
@@ -148,8 +148,8 @@ describe('crypto/kdf', () => {
     });
 
     it('should derive different key than KEK', async () => {
-      await deriveKEK(samplePRFOutput); // KEK for reference (not used directly)
-      const encKey = await deriveEncryptionKey(samplePRFOutput);
+      await deriveKEK(samplePRFOutput, 'test-salt'); // KEK for reference (not used directly)
+      const encKey = await deriveEncryptionKey(samplePRFOutput, 'test-salt');
 
       // Test by encrypting same data
       const testData = new Uint8Array([1, 2, 3, 4]);
@@ -173,9 +173,3 @@ describe('crypto/kdf', () => {
     });
   });
 });
-
-
-
-
-
-

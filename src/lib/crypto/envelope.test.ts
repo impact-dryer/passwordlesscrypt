@@ -49,7 +49,7 @@ describe('crypto/envelope', () => {
   describe('wrapDEK', () => {
     it('should wrap DEK with KEK and return base64 string', async () => {
       const dek = await generateDEK();
-      const kek = await deriveKEK(prfOutput1);
+      const kek = await deriveKEK(prfOutput1, 'test-salt');
 
       const wrapped = await wrapDEK(dek, kek);
 
@@ -60,7 +60,7 @@ describe('crypto/envelope', () => {
 
     it('should produce different output each time (random IV)', async () => {
       const dek = await generateDEK();
-      const kek = await deriveKEK(prfOutput1);
+      const kek = await deriveKEK(prfOutput1, 'test-salt');
 
       const wrapped1 = await wrapDEK(dek, kek);
       const wrapped2 = await wrapDEK(dek, kek);
@@ -70,7 +70,7 @@ describe('crypto/envelope', () => {
 
     it('should include IV in output', async () => {
       const dek = await generateDEK();
-      const kek = await deriveKEK(prfOutput1);
+      const kek = await deriveKEK(prfOutput1, 'test-salt');
 
       const wrapped = await wrapDEK(dek, kek);
       const blob = Uint8Array.from(atob(wrapped), (c) => c.charCodeAt(0));
@@ -83,7 +83,7 @@ describe('crypto/envelope', () => {
   describe('unwrapDEK', () => {
     it('should unwrap DEK correctly', async () => {
       const dek = await generateDEK();
-      const kek = await deriveKEK(prfOutput1);
+      const kek = await deriveKEK(prfOutput1, 'test-salt');
 
       const wrapped = await wrapDEK(dek, kek);
       const unwrapped = await unwrapDEK(wrapped, kek);
@@ -94,7 +94,7 @@ describe('crypto/envelope', () => {
 
     it('should produce functionally equivalent key', async () => {
       const dek = await generateDEK();
-      const kek = await deriveKEK(prfOutput1);
+      const kek = await deriveKEK(prfOutput1, 'test-salt');
 
       const wrapped = await wrapDEK(dek, kek);
       const unwrapped = await unwrapDEK(wrapped, kek);
@@ -112,8 +112,8 @@ describe('crypto/envelope', () => {
 
     it('should fail with wrong KEK', async () => {
       const dek = await generateDEK();
-      const kek1 = await deriveKEK(prfOutput1);
-      const kek2 = await deriveKEK(prfOutput2);
+      const kek1 = await deriveKEK(prfOutput1, 'test-salt');
+      const kek2 = await deriveKEK(prfOutput2, 'test-salt');
 
       const wrapped = await wrapDEK(dek, kek1);
 
@@ -122,7 +122,7 @@ describe('crypto/envelope', () => {
 
     it('should fail with tampered wrapped key', async () => {
       const dek = await generateDEK();
-      const kek = await deriveKEK(prfOutput1);
+      const kek = await deriveKEK(prfOutput1, 'test-salt');
 
       const wrapped = await wrapDEK(dek, kek);
 
@@ -138,7 +138,7 @@ describe('crypto/envelope', () => {
 
     it('should return extractable key', async () => {
       const dek = await generateDEK();
-      const kek = await deriveKEK(prfOutput1);
+      const kek = await deriveKEK(prfOutput1, 'test-salt');
 
       const wrapped = await wrapDEK(dek, kek);
       const unwrapped = await unwrapDEK(wrapped, kek);
@@ -151,7 +151,7 @@ describe('crypto/envelope', () => {
   describe('createWrappedDEKForCredential', () => {
     it('should create WrappedDEK structure', async () => {
       const dek = await generateDEK();
-      const kek = await deriveKEK(prfOutput1);
+      const kek = await deriveKEK(prfOutput1, 'test-salt');
 
       const result = await createWrappedDEKForCredential(dek, kek, 'credential-123', 'salt-abc');
 
@@ -163,7 +163,7 @@ describe('crypto/envelope', () => {
 
     it('should set createdAt to current time', async () => {
       const dek = await generateDEK();
-      const kek = await deriveKEK(prfOutput1);
+      const kek = await deriveKEK(prfOutput1, 'test-salt');
 
       const before = Date.now();
       const result = await createWrappedDEKForCredential(dek, kek, 'cred', 'salt');
@@ -175,7 +175,7 @@ describe('crypto/envelope', () => {
 
     it('should create valid wrapped key', async () => {
       const dek = await generateDEK();
-      const kek = await deriveKEK(prfOutput1);
+      const kek = await deriveKEK(prfOutput1, 'test-salt');
 
       const result = await createWrappedDEKForCredential(dek, kek, 'cred', 'salt');
 
@@ -188,8 +188,8 @@ describe('crypto/envelope', () => {
   describe('rotateDEKWrapper', () => {
     it('should re-wrap DEK with new KEK', async () => {
       const dek = await generateDEK();
-      const oldKEK = await deriveKEK(prfOutput1);
-      const newKEK = await deriveKEK(prfOutput2);
+      const oldKEK = await deriveKEK(prfOutput1, 'test-salt');
+      const newKEK = await deriveKEK(prfOutput2, 'test-salt-2');
 
       const oldWrapped = await wrapDEK(dek, oldKEK);
       const newWrapped = await rotateDEKWrapper(oldWrapped, oldKEK, newKEK);
@@ -204,8 +204,8 @@ describe('crypto/envelope', () => {
 
     it('should preserve the underlying DEK', async () => {
       const dek = await generateDEK();
-      const oldKEK = await deriveKEK(prfOutput1);
-      const newKEK = await deriveKEK(prfOutput2);
+      const oldKEK = await deriveKEK(prfOutput1, 'test-salt');
+      const newKEK = await deriveKEK(prfOutput2, 'test-salt-2');
 
       // Encrypt some data with the original DEK
       const testData = new Uint8Array([1, 2, 3, 4, 5]);
@@ -225,9 +225,9 @@ describe('crypto/envelope', () => {
 
     it('should fail if old KEK is wrong', async () => {
       const dek = await generateDEK();
-      const correctKEK = await deriveKEK(prfOutput1);
-      const wrongKEK = await deriveKEK(prfOutput2);
-      const newKEK = await deriveKEK(new Uint8Array(32).fill(0x33));
+      const correctKEK = await deriveKEK(prfOutput1, 'test-salt');
+      const wrongKEK = await deriveKEK(prfOutput2, 'test-salt');
+      const newKEK = await deriveKEK(new Uint8Array(32).fill(0x33), 'test-salt');
 
       const wrapped = await wrapDEK(dek, correctKEK);
 
@@ -240,9 +240,9 @@ describe('crypto/envelope', () => {
       const dek = await generateDEK();
 
       // Simulate multiple passkeys
-      const kek1 = await deriveKEK(prfOutput1);
-      const kek2 = await deriveKEK(prfOutput2);
-      const kek3 = await deriveKEK(new Uint8Array(32).fill(0x33));
+      const kek1 = await deriveKEK(prfOutput1, 'test-salt');
+      const kek2 = await deriveKEK(prfOutput2, 'test-salt');
+      const kek3 = await deriveKEK(new Uint8Array(32).fill(0x33), 'test-salt-3');
 
       // Each passkey wraps the same DEK
       const wrapped1 = await wrapDEK(dek, kek1);
@@ -272,6 +272,8 @@ describe('crypto/envelope', () => {
     });
   });
 });
+
+
 
 
 

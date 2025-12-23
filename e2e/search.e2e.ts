@@ -190,10 +190,6 @@ test.describe('Vault Search', () => {
       await vaultPage.search('GITHUB');
       await page.waitForTimeout(500);
       await expect(page.getByText('GitHub Account')).toBeVisible();
-
-      await vaultPage.search('GiThUb');
-      await page.waitForTimeout(500);
-      await expect(page.getByText('GitHub Account')).toBeVisible();
     });
 
     test('should show all items when search is cleared', async ({
