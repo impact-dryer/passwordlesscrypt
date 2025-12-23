@@ -366,4 +366,3 @@ describe('storage/vault-storage', () => {
     });
   });
 });
-

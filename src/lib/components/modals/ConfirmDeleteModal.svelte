@@ -38,4 +38,3 @@
     <Button variant="danger" onclick={onconfirm} loading={isLoading}>{confirmLabel}</Button>
   {/snippet}
 </Modal>
-

@@ -195,4 +195,3 @@ export async function importVaultData(data: StoredVaultData): Promise<void> {
     saveWrappedDEKs(data.wrappedDEKs),
   ]);
 }
-

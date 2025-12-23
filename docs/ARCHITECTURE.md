@@ -497,4 +497,3 @@ generateSecurePassword(length?: number): string
 - In-memory state only (not persisted)
 - Clears sensitive data (DEK) on lock
 - Never exposes DEK outside the service
-

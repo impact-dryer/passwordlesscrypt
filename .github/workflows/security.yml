@@ -61,15 +61,72 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Run Semgrep
-        run: semgrep scan --config auto --config p/security-audit --config p/secrets --sarif --output results.sarif
+        run: semgrep scan --config auto --config p/security-audit --config p/secrets --error --json --output semgrep-results.json
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      - name: Upload SARIF results
-        uses: github/codeql-action/upload-sarif@v4
+      - name: Upload Semgrep results
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          sarif_file: results.sarif
+          name: semgrep-results
+          path: semgrep-results.json
+          retention-days: 30
+
+  # ===========================================================================
+  # CodeQL Analysis
+  # ===========================================================================
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-extended,security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v4
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: '/language:javascript-typescript'
+          output: codeql-results
+          upload: never
+
+      - name: Upload CodeQL results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: codeql-results
+          path: codeql-results
+          retention-days: 30
+
+      - name: Check for CodeQL findings
+        run: |
+          # Find SARIF file and check for results
+          SARIF_FILE=$(find codeql-results -name "*.sarif" -type f | head -1)
+          if [ -z "$SARIF_FILE" ]; then
+            echo "No SARIF file found"
+            exit 0
+          fi
+
+          # Count results in SARIF file
+          RESULT_COUNT=$(jq '[.runs[].results | length] | add // 0' "$SARIF_FILE")
+          echo "CodeQL found $RESULT_COUNT issue(s)"
+
+          if [ "$RESULT_COUNT" -gt 0 ]; then
+            echo "::error::CodeQL found $RESULT_COUNT security issue(s). Check the codeql-results artifact for details."
+            jq -r '.runs[].results[] | "- \(.ruleId): \(.message.text) at \(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine)"' "$SARIF_FILE"
+            exit 1
+          fi
 
   # ===========================================================================
   # npm Audit

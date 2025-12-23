@@ -84,4 +84,3 @@
     <p class="text-danger-500 mt-1.5 text-sm">{error}</p>
   {/if}
 </div>
-
