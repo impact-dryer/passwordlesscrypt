@@ -34,6 +34,7 @@ const config = {
       $webauthn: './src/lib/webauthn',
       $storage: './src/lib/storage',
       $services: './src/lib/services',
+      $stores: './src/lib/stores',
     },
   },
 };

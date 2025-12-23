@@ -122,6 +122,8 @@ export default ts.config(
       '**/*.config.js',
       '**/*.config.cjs',
       '**/*.config.ts',
+      // Svelte 5 runes files - validated by svelte-check instead
+      '**/*.svelte.ts',
     ],
   }
 );

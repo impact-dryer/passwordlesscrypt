@@ -525,30 +525,42 @@ export class FileUploadModal extends BasePage {
   }
 
   /**
-   * Fill title field
+   * Fill title field (only visible after file is selected)
    */
   async fillTitle(title: string): Promise<void> {
-    await this.page.getByLabel(/title/i).fill(title);
+    const dialog = this.page.getByRole('dialog');
+    const titleInput = dialog.locator('#file-title');
+    // Wait for title input to appear (it shows after file is selected)
+    if (await titleInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await titleInput.fill(title);
+    }
   }
 
   /**
    * Set file to upload
+   * Note: The file input is hidden, but setInputFiles works on hidden inputs
    */
   async setFile(filePath: string): Promise<void> {
-    await this.page.setInputFiles('input[type="file"]', filePath);
+    const dialog = this.page.getByRole('dialog');
+    const fileInput = dialog.locator('input[type="file"]');
+    await fileInput.setInputFiles(filePath);
   }
 
   /**
    * Submit the upload
    */
   async submit(): Promise<void> {
-    await this.page.getByRole('button', { name: /upload|save/i }).click();
+    const dialog = this.page.getByRole('dialog');
+    // Button text is "Upload & Encrypt" - use exact match
+    const uploadButton = dialog.getByRole('button', { name: 'Upload & Encrypt' });
+    await uploadButton.click();
   }
 
   /**
    * Close the modal
    */
   async close(): Promise<void> {
-    await this.page.getByRole('button', { name: /cancel|close/i }).click();
+    const dialog = this.page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
   }
 }

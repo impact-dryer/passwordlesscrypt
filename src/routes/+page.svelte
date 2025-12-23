@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import {
     Toast,
-    showToast,
     LoadingView,
     SetupView,
     LockedView,
@@ -15,393 +14,30 @@
     AddPasskeyModal,
     FileUploadModal,
   } from '$components';
-  import {
-    initializeVault,
-    setupVault,
-    unlockVault,
-    lockVault,
-    addPasskey,
-    removePasskey,
-    addVaultItem,
-    updateVaultItem,
-    deleteVaultItem,
-    getVaultItems,
-    searchVaultItems,
-    generateSecurePassword,
-    addFileItem,
-    downloadFileItem,
-    type VaultState,
-  } from '$services';
-  import { detectCapabilities, getPRFSupportMessage, WebAuthnError } from '$webauthn';
-  import type { PlatformCapabilities, StoredCredential } from '$webauthn';
+  import { createVaultPageStore } from '$stores';
+  import type { StoredCredential } from '$webauthn';
   import type { VaultItem } from '$storage';
 
-  // ============================================================================
-  // State
-  // ============================================================================
+  // Create the page store instance
+  const store = createVaultPageStore();
 
-  // App state
-  let isLoading = $state(true);
-  let vaultState = $state<VaultState | null>(null);
-  let capabilities = $state<PlatformCapabilities | null>(null);
-  let compatibilityMessage = $state<string | null>(null);
-
-  // UI state
-  type ViewType = 'setup' | 'locked' | 'vault' | 'settings';
-  let currentView = $state<ViewType>('locked');
-  let searchQuery = $state('');
-  let filteredItems = $state<VaultItem[]>([]);
-
-  // Modal state
-  let showSetupModal = $state(false);
-  let showAddItemModal = $state(false);
-  let showEditItemModal = $state(false);
-  let showDeleteItemModal = $state(false);
-  let showAddPasskeyModal = $state(false);
-  let showDeletePasskeyModal = $state(false);
-  let showFileUploadModal = $state(false);
-
-  // Form state
-  let setupUserName = $state('');
-  let setupPasskeyName = $state('');
-  let newItemType = $state<'note' | 'password' | 'secret'>('password');
-  let newItemTitle = $state('');
-  let newItemContent = $state('');
-  let newItemUrl = $state('');
-  let newItemUsername = $state('');
-  let editingItem = $state<VaultItem | null>(null);
-  let deletingItem = $state<VaultItem | null>(null);
-  let newPasskeyName = $state('');
-  let deletingPasskey = $state<StoredCredential | null>(null);
-
-  // Loading states
-  let isUnlocking = $state(false);
-  let isSettingUp = $state(false);
-  let isSaving = $state(false);
-
-  // ============================================================================
-  // Lifecycle
-  // ============================================================================
-
-  onMount(async () => {
-    try {
-      capabilities = await detectCapabilities();
-      compatibilityMessage = getPRFSupportMessage(capabilities);
-      vaultState = await initializeVault();
-
-      if (!vaultState.isSetup) {
-        currentView = 'setup';
-      } else {
-        currentView = 'locked';
-      }
-    } catch (error) {
-      console.error('Initialization error:', error);
-      showToast('Failed to initialize application', 'error');
-    } finally {
-      isLoading = false;
-    }
+  // Initialize on mount
+  onMount(() => {
+    void store.initialize();
   });
 
-  // Update filtered items when search changes
+  // Reactive search effect
   $effect(() => {
-    if (vaultState?.isUnlocked === true) {
-      if (searchQuery.trim() !== '') {
-        filteredItems = searchVaultItems(searchQuery);
-      } else {
-        filteredItems = getVaultItems();
-      }
+    if (store.vaultState?.isUnlocked === true) {
+      // Trigger re-filter when search changes
+      void store.searchQuery;
     }
   });
 
-  // ============================================================================
-  // Vault Handlers
-  // ============================================================================
-
-  async function handleSetup(): Promise<void> {
-    if (setupUserName.trim() === '' || setupPasskeyName.trim() === '') {
-      showToast('Please fill in all fields', 'error');
-      return;
-    }
-
-    isSettingUp = true;
-    try {
-      vaultState = await setupVault(setupUserName.trim(), setupPasskeyName.trim());
-      currentView = 'vault';
-      showSetupModal = false;
-      filteredItems = getVaultItems();
-      showToast('Vault created successfully!', 'success');
-    } catch (error) {
-      console.error('Setup error:', error);
-      if (error instanceof WebAuthnError) {
-        showToast(error.message, 'error');
-      } else {
-        showToast('Failed to create vault', 'error');
-      }
-    } finally {
-      isSettingUp = false;
-    }
-  }
-
-  async function handleUnlock(): Promise<void> {
-    isUnlocking = true;
-    try {
-      const result = await unlockVault();
-      if (vaultState === null) {
-        throw new Error('Vault state not initialized');
-      }
-      vaultState = {
-        ...vaultState,
-        isUnlocked: true,
-        vault: result.vault,
-        currentCredentialId: result.credentialId,
-      };
-      currentView = 'vault';
-      filteredItems = getVaultItems();
-      showToast(`Unlocked with ${result.credentialName}`, 'success');
-    } catch (error) {
-      console.error('Unlock error:', error);
-      if (error instanceof WebAuthnError) {
-        if (error.type === 'cancelled') {
-          return;
-        }
-        showToast(error.message, 'error');
-      } else {
-        showToast('Failed to unlock vault', 'error');
-      }
-    } finally {
-      isUnlocking = false;
-    }
-  }
-
-  function handleLock(): void {
-    lockVault();
-    if (vaultState === null) {
-      return;
-    }
-    vaultState = {
-      ...vaultState,
-      isUnlocked: false,
-      vault: null,
-      currentCredentialId: null,
-    };
-    currentView = 'locked';
-    searchQuery = '';
-    filteredItems = [];
-    showToast('Vault locked', 'info');
-  }
-
-  // ============================================================================
-  // Item Handlers
-  // ============================================================================
-
-  function resetItemForm(): void {
-    newItemType = 'password';
-    newItemTitle = '';
-    newItemContent = '';
-    newItemUrl = '';
-    newItemUsername = '';
-  }
-
-  async function handleAddItem(): Promise<void> {
-    if (newItemTitle.trim() === '' || newItemContent.trim() === '') {
-      showToast('Please fill in required fields', 'error');
-      return;
-    }
-
-    isSaving = true;
-    try {
-      const itemData: Parameters<typeof addVaultItem>[0] = {
-        type: newItemType,
-        title: newItemTitle.trim(),
-        content: newItemContent.trim(),
-      };
-      if (newItemUrl.trim() !== '') {
-        itemData.url = newItemUrl.trim();
-      }
-      if (newItemUsername.trim() !== '') {
-        itemData.username = newItemUsername.trim();
-      }
-      await addVaultItem(itemData);
-
-      filteredItems = searchQuery !== '' ? searchVaultItems(searchQuery) : getVaultItems();
-      showAddItemModal = false;
-      resetItemForm();
-      showToast('Item added successfully', 'success');
-    } catch (error) {
-      console.error('Add item error:', error);
-      showToast('Failed to add item', 'error');
-    } finally {
-      isSaving = false;
-    }
-  }
-
-  async function handleUpdateItem(): Promise<void> {
-    if (editingItem === null || newItemTitle.trim() === '' || newItemContent.trim() === '') {
-      showToast('Please fill in required fields', 'error');
-      return;
-    }
-
-    isSaving = true;
-    try {
-      const updates: Parameters<typeof updateVaultItem>[1] = {
-        type: newItemType,
-        title: newItemTitle.trim(),
-        content: newItemContent.trim(),
-      };
-      if (newItemUrl.trim() !== '') {
-        updates.url = newItemUrl.trim();
-      }
-      if (newItemUsername.trim() !== '') {
-        updates.username = newItemUsername.trim();
-      }
-      await updateVaultItem(editingItem.id, updates);
-
-      filteredItems = searchQuery !== '' ? searchVaultItems(searchQuery) : getVaultItems();
-      showEditItemModal = false;
-      editingItem = null;
-      resetItemForm();
-      showToast('Item updated successfully', 'success');
-    } catch (error) {
-      console.error('Update item error:', error);
-      showToast('Failed to update item', 'error');
-    } finally {
-      isSaving = false;
-    }
-  }
-
-  async function handleDeleteItem(): Promise<void> {
-    if (deletingItem === null) {
-      return;
-    }
-
-    isSaving = true;
-    try {
-      await deleteVaultItem(deletingItem.id);
-      filteredItems = searchQuery !== '' ? searchVaultItems(searchQuery) : getVaultItems();
-      showDeleteItemModal = false;
-      deletingItem = null;
-      showToast('Item deleted', 'success');
-    } catch (error) {
-      console.error('Delete item error:', error);
-      showToast('Failed to delete item', 'error');
-    } finally {
-      isSaving = false;
-    }
-  }
-
-  function openEditModal(item: VaultItem): void {
-    // Files cannot be edited, only deleted and re-uploaded
-    if (item.type === 'file') {
-      return;
-    }
-
-    editingItem = item;
-    newItemType = item.type;
-    newItemTitle = item.title;
-    newItemContent = item.content;
-    newItemUrl = item.url ?? '';
-    newItemUsername = item.username ?? '';
-    showEditItemModal = true;
-  }
-
-  function openDeleteModal(item: VaultItem): void {
-    deletingItem = item;
-    showDeleteItemModal = true;
-  }
-
-  // ============================================================================
-  // File Handlers
-  // ============================================================================
-
-  async function handleFileUpload(file: File, title: string): Promise<void> {
-    isSaving = true;
-    try {
-      await addFileItem(file, title);
-      filteredItems = searchQuery !== '' ? searchVaultItems(searchQuery) : getVaultItems();
-      showFileUploadModal = false;
-      showToast('File uploaded successfully', 'success');
-    } catch (error) {
-      console.error('File upload error:', error);
-      if (error instanceof Error) {
-        showToast(error.message, 'error');
-      } else {
-        showToast('Failed to upload file', 'error');
-      }
-    } finally {
-      isSaving = false;
-    }
-  }
-
-  async function handleFileDownload(item: VaultItem): Promise<void> {
-    try {
-      await downloadFileItem(item.id);
-      showToast('File download started', 'success');
-    } catch (error) {
-      console.error('File download error:', error);
-      if (error instanceof Error) {
-        showToast(error.message, 'error');
-      } else {
-        showToast('Failed to download file', 'error');
-      }
-    }
-  }
-
-  // ============================================================================
-  // Passkey Handlers
-  // ============================================================================
-
-  async function handleAddPasskey(): Promise<void> {
-    if (newPasskeyName.trim() === '') {
-      showToast('Please enter a name for the passkey', 'error');
-      return;
-    }
-
-    isSaving = true;
-    try {
-      const credentials = await addPasskey(newPasskeyName.trim());
-      if (vaultState !== null) {
-        vaultState = { ...vaultState, credentials };
-      }
-      showAddPasskeyModal = false;
-      newPasskeyName = '';
-      showToast('Passkey added successfully', 'success');
-    } catch (error) {
-      console.error('Add passkey error:', error);
-      if (error instanceof WebAuthnError) {
-        showToast(error.message, 'error');
-      } else {
-        showToast('Failed to add passkey', 'error');
-      }
-    } finally {
-      isSaving = false;
-    }
-  }
-
-  async function handleDeletePasskey(): Promise<void> {
-    if (deletingPasskey === null) {
-      return;
-    }
-
-    isSaving = true;
-    try {
-      const credentials = await removePasskey(deletingPasskey.id);
-      if (vaultState !== null) {
-        vaultState = { ...vaultState, credentials };
-      }
-      showDeletePasskeyModal = false;
-      deletingPasskey = null;
-      showToast('Passkey removed', 'success');
-    } catch (error) {
-      console.error('Delete passkey error:', error);
-      showToast('Failed to remove passkey', 'error');
-    } finally {
-      isSaving = false;
-    }
-  }
-
+  // Helper to handle passkey deletion modal
   function openDeletePasskeyModal(credential: StoredCredential): void {
-    deletingPasskey = credential;
-    showDeletePasskeyModal = true;
+    store.passkeyForm.setForDelete(credential);
+    store.openModal('deletePasskey');
   }
 </script>
 
@@ -410,53 +46,61 @@
 </svelte:head>
 
 <main class="flex min-h-dvh flex-col">
-  {#if isLoading}
+  {#if store.isLoading}
     <LoadingView />
-  {:else if currentView === 'setup'}
+  {:else if store.currentView === 'setup'}
     <SetupView
-      {capabilities}
-      {compatibilityMessage}
+      capabilities={store.capabilities}
+      compatibilityMessage={store.compatibilityMessage}
       onsetup={() => {
-        showSetupModal = true;
+        store.openModal('setup');
       }}
     />
-  {:else if currentView === 'locked'}
-    <LockedView credentials={vaultState?.credentials ?? []} {isUnlocking} onunlock={handleUnlock} />
-  {:else if currentView === 'vault' || currentView === 'settings'}
+  {:else if store.currentView === 'locked'}
+    <LockedView
+      credentials={store.vaultState?.credentials ?? []}
+      isUnlocking={store.isUnlocking}
+      onunlock={store.handleUnlock}
+    />
+  {:else if store.currentView === 'vault' || store.currentView === 'settings'}
     <VaultHeader
-      itemCount={vaultState?.metadata?.itemCount ?? 0}
-      showSettings={currentView === 'settings'}
-      ontogglesettings={() => {
-        currentView = currentView === 'settings' ? 'vault' : 'settings';
-      }}
-      onlock={handleLock}
+      itemCount={store.vaultState?.metadata?.itemCount ?? 0}
+      showSettings={store.currentView === 'settings'}
+      ontogglesettings={store.toggleSettings}
+      onlock={store.handleLock}
     />
 
-    {#if currentView === 'settings'}
+    {#if store.currentView === 'settings'}
       <SettingsView
-        credentials={vaultState?.credentials ?? []}
-        currentCredentialId={vaultState?.currentCredentialId ?? null}
+        credentials={store.vaultState?.credentials ?? []}
+        currentCredentialId={store.vaultState?.currentCredentialId ?? null}
         onaddpasskey={() => {
-          showAddPasskeyModal = true;
+          store.openModal('addPasskey');
         }}
         ondeletepasskey={openDeletePasskeyModal}
       />
     {:else}
       <VaultContentView
-        items={filteredItems}
-        {searchQuery}
+        items={store.filteredItems}
+        searchQuery={store.searchQuery}
         onsearchchange={(q: string) => {
-          searchQuery = q;
+          store.setSearchQuery(q);
         }}
         onadditem={() => {
-          showAddItemModal = true;
+          store.openModal('addItem');
         }}
         onuploadfile={() => {
-          showFileUploadModal = true;
+          store.openModal('fileUpload');
         }}
-        onedititem={openEditModal}
-        ondeleteitem={openDeleteModal}
-        ondownloaditem={handleFileDownload}
+        onedititem={(item: VaultItem) => {
+          store.openEditModal(item);
+        }}
+        ondeleteitem={(item: VaultItem) => {
+          store.openDeleteModal(item);
+        }}
+        ondownloaditem={(item: VaultItem) => {
+          void store.handleFileDownload(item);
+        }}
       />
     {/if}
   {/if}
@@ -467,146 +111,145 @@
 
 <!-- Setup Modal -->
 <SetupModal
-  open={showSetupModal}
-  userName={setupUserName}
-  passkeyName={setupPasskeyName}
-  isLoading={isSettingUp}
+  open={store.modals.isOpen('setup')}
+  userName={store.setupForm.userName}
+  passkeyName={store.setupForm.passkeyName}
+  isLoading={store.isSettingUp}
   onclose={() => {
-    showSetupModal = false;
+    store.modals.close();
   }}
-  onsubmit={handleSetup}
+  onsubmit={store.handleSetup}
   onusernamechange={(v: string) => {
-    setupUserName = v;
+    store.setupForm.setUserName(v);
   }}
   onpasskeynamechange={(v: string) => {
-    setupPasskeyName = v;
+    store.setupForm.setPasskeyName(v);
   }}
 />
 
 <!-- Add Item Modal -->
 <ItemFormModal
-  open={showAddItemModal}
+  open={store.modals.isOpen('addItem')}
   mode="add"
-  itemType={newItemType}
-  title={newItemTitle}
-  content={newItemContent}
-  url={newItemUrl}
-  username={newItemUsername}
-  isLoading={isSaving}
+  itemType={store.itemForm.type}
+  title={store.itemForm.title}
+  content={store.itemForm.content}
+  url={store.itemForm.url}
+  username={store.itemForm.username}
+  isLoading={store.isSaving}
   onclose={() => {
-    showAddItemModal = false;
-    resetItemForm();
+    store.modals.close();
+    store.itemForm.reset();
   }}
-  onsubmit={handleAddItem}
+  onsubmit={store.handleAddItem}
   ongeneratepassword={() => {
-    newItemContent = generateSecurePassword(24);
+    store.itemForm.setContent(store.generatePassword(24));
   }}
   ontypechange={(t: 'note' | 'password' | 'secret') => {
-    newItemType = t;
+    store.itemForm.setType(t);
   }}
   ontitlechange={(v: string) => {
-    newItemTitle = v;
+    store.itemForm.setTitle(v);
   }}
   oncontentchange={(v: string) => {
-    newItemContent = v;
+    store.itemForm.setContent(v);
   }}
   onurlchange={(v: string) => {
-    newItemUrl = v;
+    store.itemForm.setUrl(v);
   }}
   onusernamechange={(v: string) => {
-    newItemUsername = v;
+    store.itemForm.setUsername(v);
   }}
 />
 
 <!-- Edit Item Modal -->
 <ItemFormModal
-  open={showEditItemModal}
+  open={store.modals.isOpen('editItem')}
   mode="edit"
-  itemType={newItemType}
-  title={newItemTitle}
-  content={newItemContent}
-  url={newItemUrl}
-  username={newItemUsername}
-  isLoading={isSaving}
+  itemType={store.itemForm.type}
+  title={store.itemForm.title}
+  content={store.itemForm.content}
+  url={store.itemForm.url}
+  username={store.itemForm.username}
+  isLoading={store.isSaving}
   onclose={() => {
-    showEditItemModal = false;
-    editingItem = null;
-    resetItemForm();
+    store.modals.close();
+    store.itemForm.reset();
   }}
-  onsubmit={handleUpdateItem}
+  onsubmit={store.handleUpdateItem}
   ongeneratepassword={() => {
-    newItemContent = generateSecurePassword(24);
+    store.itemForm.setContent(store.generatePassword(24));
   }}
   ontypechange={(t: 'note' | 'password' | 'secret') => {
-    newItemType = t;
+    store.itemForm.setType(t);
   }}
   ontitlechange={(v: string) => {
-    newItemTitle = v;
+    store.itemForm.setTitle(v);
   }}
   oncontentchange={(v: string) => {
-    newItemContent = v;
+    store.itemForm.setContent(v);
   }}
   onurlchange={(v: string) => {
-    newItemUrl = v;
+    store.itemForm.setUrl(v);
   }}
   onusernamechange={(v: string) => {
-    newItemUsername = v;
+    store.itemForm.setUsername(v);
   }}
 />
 
 <!-- Delete Item Modal -->
 <ConfirmDeleteModal
-  open={showDeleteItemModal}
+  open={store.modals.isOpen('deleteItem')}
   title="Delete Item"
   description="This action cannot be undone"
-  itemName={deletingItem?.title ?? ''}
+  itemName={store.itemForm.deletingItem?.title ?? ''}
   confirmLabel="Delete"
   warningMessage="This will permanently remove it from your vault."
-  isLoading={isSaving}
+  isLoading={store.isSaving}
   onclose={() => {
-    showDeleteItemModal = false;
-    deletingItem = null;
+    store.modals.close();
+    store.itemForm.clearDelete();
   }}
-  onconfirm={handleDeleteItem}
+  onconfirm={store.handleDeleteItem}
 />
 
 <!-- Add Passkey Modal -->
 <AddPasskeyModal
-  open={showAddPasskeyModal}
-  passkeyName={newPasskeyName}
-  isLoading={isSaving}
+  open={store.modals.isOpen('addPasskey')}
+  passkeyName={store.passkeyForm.name}
+  isLoading={store.isSaving}
   onclose={() => {
-    showAddPasskeyModal = false;
-    newPasskeyName = '';
+    store.modals.close();
+    store.passkeyForm.reset();
   }}
-  onsubmit={handleAddPasskey}
+  onsubmit={store.handleAddPasskey}
   onpasskeyname={(v: string) => {
-    newPasskeyName = v;
+    store.passkeyForm.setName(v);
   }}
 />
 
 <!-- Delete Passkey Modal -->
 <ConfirmDeleteModal
-  open={showDeletePasskeyModal}
+  open={store.modals.isOpen('deletePasskey')}
   title="Remove Passkey"
   description="This passkey will no longer be able to unlock your vault"
-  itemName={deletingPasskey?.name ?? ''}
+  itemName={store.passkeyForm.deletingPasskey?.name ?? ''}
   confirmLabel="Remove"
   warningMessage="You will no longer be able to unlock your vault with this passkey."
-  isLoading={isSaving}
+  isLoading={store.isSaving}
   onclose={() => {
-    showDeletePasskeyModal = false;
-    deletingPasskey = null;
+    store.modals.close();
+    store.passkeyForm.clearDelete();
   }}
-  onconfirm={handleDeletePasskey}
+  onconfirm={store.handleDeletePasskey}
 />
 
 <!-- File Upload Modal -->
 <FileUploadModal
-  open={showFileUploadModal}
-  isLoading={isSaving}
+  open={store.modals.isOpen('fileUpload')}
+  isLoading={store.isSaving}
   onclose={() => {
-    showFileUploadModal = false;
+    store.modals.close();
   }}
-  onsubmit={handleFileUpload}
+  onsubmit={store.handleFileUpload}
 />
