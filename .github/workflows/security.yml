@@ -46,30 +46,30 @@ jobs:
           allow-ghsas: false
 
   # ===========================================================================
-  # CodeQL Analysis
+  # Semgrep Security Analysis
   # ===========================================================================
-  codeql:
-    name: CodeQL Analysis
+  semgrep:
+    name: Semgrep Security Analysis
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
+
+    container:
+      image: semgrep/semgrep
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: javascript-typescript
-          queries: security-extended,security-and-quality
+      - name: Run Semgrep
+        run: semgrep scan --config auto --config p/security-audit --config p/secrets --sarif --output results.sarif
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
         with:
-          category: '/language:javascript-typescript'
+          sarif_file: results.sarif
 
   # ===========================================================================
   # npm Audit

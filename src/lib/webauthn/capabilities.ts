@@ -105,3 +105,4 @@ export function getPRFSupportMessage(capabilities: PlatformCapabilities): string
 
   return null;
 }
+
