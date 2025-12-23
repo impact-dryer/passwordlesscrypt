@@ -7,6 +7,10 @@ on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   # ===========================================================================
   # PR Title Validation (Conventional Commits)
