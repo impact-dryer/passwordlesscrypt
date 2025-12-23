@@ -1,5 +1,7 @@
 # Passwordless Vault
 
+> ⚠️ **Disclaimer**: This project was created for fun and educational purposes to explore WebAuthn PRF capabilities. It is **not recommended** for use as an actual storage solution for sensitive data. Use established password managers and security tools for real-world secret management.
+
 A secure, client-side encrypted vault using WebAuthn PRF (Pseudo-Random Function) for passwordless encryption. Your secrets are encrypted locally using hardware-backed keys derived from your passkeys — no passwords, no server-side key storage.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
