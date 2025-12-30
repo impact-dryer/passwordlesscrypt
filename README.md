@@ -1,6 +1,6 @@
 # Passwordless Vault
 
-> 🤖 **no cap this is AI slop fr fr**: this whole project was vibecoded by AI, straight up brainrot coded by the machines 💀 absolutely cooked with that ChatGPT sauce, 100% artificial intelligence ahh code 🗣️🔥 (slop term)
+> 🤖 **no cap this is AI slop fr fr**: this whole project was vibecoded by AI, straight up brainrot coded by the machines 💀 absolutely cooked with that ChatGPT sauce, 100% artificial intelligence ahh code 🗣️🔥
 
 > ⚠️ **Disclaimer**: This project was created for fun and educational purposes to explore WebAuthn PRF capabilities. It is **not recommended** for use as an actual storage solution for sensitive data. Use established password managers and security tools for real-world secret management.
 
