@@ -20,6 +20,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 if [[ $# -ge 1 ]]; then
   NODE_VERSION="$1"
+  info "Using Node version from CLI argument: ${NODE_VERSION}"
 elif [[ -f "${REPO_ROOT}/.nvmrc" ]]; then
   NODE_VERSION="$(cat "${REPO_ROOT}/.nvmrc")"
   info "Using Node version from .nvmrc: ${NODE_VERSION}"
@@ -27,7 +28,9 @@ else
   # Fall back to the minimum version declared in package.json engines.node
   ENGINES_NODE=""
   if command -v node &>/dev/null && command -v npm &>/dev/null; then
-    ENGINES_NODE="$(node -e "try{const p=require('${REPO_ROOT}/package.json');const v=p?.engines?.node;if(v)process.stdout.write(v.replace(/[^0-9.]/g,''));}catch(e){}"  2>/dev/null || true)"
+    # Extract the leading version number from a semver range (e.g. ">=22.0.0" -> "22")
+    # nvm accepts plain major versions and "lts/*", so we strip only leading range operators.
+    ENGINES_NODE="$(node -e "try{const p=require('${REPO_ROOT}/package.json');const v=p?.engines?.node;if(v)process.stdout.write(v.replace(/^[^0-9]*/,'').replace(/\s.*$/,''));}catch(e){}"  2>/dev/null || true)"
   fi
   NODE_VERSION="${ENGINES_NODE:-lts/*}"
   info "Using Node version: ${NODE_VERSION}"
