@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # install-node.sh
-# Installs nvm, Node.js (version specified by .nvmrc or the engines field), and npm.
+# Installs nvm, Node.js (version specified by .nvmrc or the engines field), npm,
+# and opencode-ai (npm install -g opencode-ai).
 # Usage: bash scripts/install-node.sh [node-version]
 #   node-version  Optional. Defaults to the version in .nvmrc, then package.json engines, then "lts/*".
 
@@ -73,7 +74,15 @@ info "Updating npm to latest ..."
 npm install -g npm@latest
 
 info "npm version:  $(npm --version)"
-info "Done. Node.js, npm, and nvm are ready."
+
+# ---------------------------------------------------------------------------
+# Install opencode-ai globally
+# ---------------------------------------------------------------------------
+info "Installing opencode-ai globally ..."
+npm install -g opencode-ai
+
+info "opencode version: $(opencode --version 2>/dev/null || echo "installed")"
+info "Done. Node.js, npm, nvm, and opencode-ai are ready."
 info ""
 info "To activate nvm in future shell sessions, add the following to your shell rc file (~/.bashrc, ~/.zshrc, etc.):"
 info '  export NVM_DIR="$HOME/.nvm"'
