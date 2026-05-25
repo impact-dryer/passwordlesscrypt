@@ -62,10 +62,10 @@
     "vitest": "^4.0.0"
   },
   "dependencies": {
-    "@simplewebauthn/browser": "^13.2.0",
+    "@simplewebauthn/browser": "^13.3.0",
     "@vite-pwa/sveltekit": "^1.1.0",
-    "idb-keyval": "^6.2.0",
-    "libsodium-wrappers": "^0.7.15",
+    "idb-keyval": "^6.2.4",
+    "libsodium-wrappers": "^0.8.4",
     "zod": "^3.25.0"
   },
   "engines": {
